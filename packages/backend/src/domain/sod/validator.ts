@@ -1,3 +1,5 @@
+import { SodConflictError } from './errors';
+
 export interface TransactionActors {
   prRequesterId?: string;
   poAuthorId?: string;
@@ -15,12 +17,7 @@ export type ActionType =
   | 'CHECK_PAYMENT'
   | 'EXECUTE_PAYMENT';
 
-export class SodConflictError extends Error {
-  constructor(message: string, public readonly ruleCode: string) {
-    super(message);
-    this.name = 'SodConflictError';
-  }
-}
+export { SodConflictError };
 
 export function validateSodAction(
   currentActorId: string,
