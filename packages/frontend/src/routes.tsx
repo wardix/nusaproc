@@ -2,10 +2,14 @@ import React from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { ActionDashboard } from './features/dashboard/ActionDashboard';
+import { PrListPage } from './features/pr/pages/PrListPage';
 import { PrCreateForm } from './features/pr/components/PrCreateForm';
-import { TwoWayMatcherScreen } from './features/invoice/components/TwoWayMatcherScreen';
+import { PoListPage } from './features/po/pages/PoListPage';
+import { InvoiceListPage } from './features/invoice/pages/InvoiceListPage';
+import { ReceiptListPage } from './features/receipt/pages/ReceiptListPage';
 import { BastCreateForm } from './features/receipt/components/BastCreateForm';
-import { PaymentWorkflowSteps } from './features/payment/components/PaymentWorkflowSteps';
+import { PaymentListPage } from './features/payment/pages/PaymentListPage';
+import { AuditLogPage } from './features/audit/pages/AuditLogPage';
 
 export const router: ReturnType<typeof createBrowserRouter> = createBrowserRouter([
   {
@@ -22,52 +26,43 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
       },
       {
         path: 'pr',
+        element: <PrListPage />,
+      },
+      {
+        path: 'pr/create',
         element: <PrCreateForm />,
       },
       {
-        path: 'invoices',
-        element: (
-          <TwoWayMatcherScreen
-            poData={{ poNumber: 'PO-2026-0001', totalAmount: 10000000 }}
-            invoiceData={{
-              invoiceNumber: 'INV-2026-99',
-              subtotalAmount: 10000000,
-              variance: 0,
-              variancePct: 0,
-            }}
-          />
-        ),
-      },
-      {
         path: 'po',
-        element: <div>Daftar Surat Pesanan (PO)</div>,
+        element: <PoListPage />,
       },
       {
         path: 'vendors',
-        element: <div>Manajemen Vendor & Rekening Bank</div>,
+        element: <PoListPage />,
       },
       {
         path: 'receipts',
+        element: <ReceiptListPage />,
+      },
+      {
+        path: 'receipts/create',
         element: <BastCreateForm />,
       },
       {
+        path: 'invoices',
+        element: <InvoiceListPage />,
+      },
+      {
         path: 'ncr',
-        element: <div>Laporan Ketidaksesuaian (NCR)</div>,
+        element: <ReceiptListPage />,
       },
       {
         path: 'payments',
-        element: (
-          <PaymentWorkflowSteps
-            status="PENDING_CHECK"
-            makerName="Andi (Finance Staff)"
-            checkerName="Siti (Head of AP)"
-            executorName="Budi (Treasury)"
-          />
-        ),
+        element: <PaymentListPage />,
       },
       {
         path: 'audit',
-        element: <div>Audit Trail & Kepatuhan</div>,
+        element: <AuditLogPage />,
       },
     ],
   },
