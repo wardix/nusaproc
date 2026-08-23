@@ -1,52 +1,77 @@
 import React from 'react';
-import { Form, Input, InputNumber, Select, DatePicker, Button, Card, Space, Typography } from 'antd';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Form, Input, InputNumber, Select, DatePicker, Button, Card, Space, Typography, message } from 'antd';
+import { PlusOutlined, DeleteOutlined, SendOutlined } from '@ant-design/icons';
 import { formatRupiah } from '../../../utils/currency';
+import { calculatePrGrandTotal } from '../utils/calculator';
+import { useAuthStore } from '../../../stores/useAuthStore';
 
 const { Text } = Typography;
+const { TextArea } = Input;
 
 export const PrCreateForm: React.FC = () => {
   const [form] = Form.useForm();
+  const { user } = useAuthStore();
   const watchedItems = Form.useWatch('items', form) || [];
 
-  // Kalkulasi total estimasi otomatis secara reaktif
-  const grandTotal = watchedItems.reduce((acc: number, item: { quantityRequested?: number; estimatedUnitPrice?: number }) => {
-    const qty = Number(item?.quantityRequested) || 0;
-    const price = Number(item?.estimatedUnitPrice) || 0;
-    return acc + qty * price;
-  }, 0);
+  // Kalkulasi grand total otomatis menggunakan calculator helper (R6)
+  const grandTotal = calculatePrGrandTotal(watchedItems);
+
+  const handleSubmit = (values: Record<string, unknown>) => {
+    message.success('Permintaan Pembelian (PR) berhasil dikirim untuk persetujuan!');
+    console.log('Submitted PR:', { ...values, grandTotal, requesterId: user?.id });
+  };
 
   return (
-    <Form form={form} layout="vertical" onFinish={(values) => console.log(values)}>
-      <Card title="Informasi Permintaan Pembelian" style={{ marginBottom: 24 }}>
+    <Form
+      form={form}
+      layout="vertical"
+      initialValues={{
+        paymentTermType: 'PAY_AFTER_RECEIPT',
+        items: [{ itemName: '', quantityRequested: 1, uom: 'Unit', estimatedUnitPrice: 0 }],
+      }}
+      onFinish={handleSubmit}
+    >
+      <Card title="Informasi Permintaan Pembelian (PR)" style={{ marginBottom: 24 }}>
+        <Form.Item
+          name="purpose"
+          label="Tujuan / Justifikasi Kebutuhan Pengadaan (R6)"
+          rules={[{ required: true, message: 'Wajib mengisi tujuan pengadaan' }]}
+        >
+          <TextArea rows={3} placeholder="Contoh: Pengadaan router switch untuk upgrade POP Medan" />
+        </Form.Item>
+
         <Form.Item
           name="paymentTermType"
           label="Metode Pembayaran yang Diajukan (R7)"
-          rules={[{ required: true, message: 'Wajib memilih cara bayar!' }]}
+          rules={[{ required: true, message: 'Wajib memilih cara pembayaran!' }]}
         >
           <Select placeholder="Pilih cara pembayaran">
             <Select.Option value="ADVANCE_OR_COD">Bayar Dimuka / COD (Jalur Uang Muka)</Select.Option>
-            <Select.Option value="PAY_AFTER_RECEIPT">Bayar Setelah Terima (Jalur Standar)</Select.Option>
+            <Select.Option value="PAY_AFTER_RECEIPT">Bayar Setelah Terima Barang (Jalur Standar BAST)</Select.Option>
           </Select>
         </Form.Item>
 
-        <Form.Item name="requiredDate" label="Tanggal Kebutuhan" rules={[{ required: true }]}>
+        <Form.Item
+          name="requiredDate"
+          label="Tanggal Kebutuhan / Deadline"
+          rules={[{ required: true, message: 'Pilih tanggal kebutuhan' }]}
+        >
           <DatePicker style={{ width: '100%' }} />
         </Form.Item>
       </Card>
 
-      <Card title="Daftar Item Barang / Jasa (R6)">
+      <Card title="Daftar Baris Barang / Jasa (R6 Multi-Item Form.List)">
         <Form.List name="items">
           {(fields, { add, remove }) => (
             <>
               {fields.map(({ key, name, ...restField }) => (
-                <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                <Space key={key} style={{ display: 'flex', marginBottom: 12 }} align="baseline" wrap>
                   <Form.Item
                     {...restField}
                     name={[name, 'itemName']}
                     rules={[{ required: true, message: 'Nama item wajib diisi' }]}
                   >
-                    <Input placeholder="Nama Barang / Jasa" style={{ width: 220 }} />
+                    <Input placeholder="Nama Barang / Jasa" style={{ width: 260 }} />
                   </Form.Item>
 
                   <Form.Item
@@ -68,7 +93,7 @@ export const PrCreateForm: React.FC = () => {
                   <Form.Item
                     {...restField}
                     name={[name, 'estimatedUnitPrice']}
-                    rules={[{ required: true, message: 'Harga' }]}
+                    rules={[{ required: true, message: 'Harga satuan wajib diisi' }]}
                   >
                     <InputNumber<number>
                       min={0}
@@ -79,7 +104,14 @@ export const PrCreateForm: React.FC = () => {
                     />
                   </Form.Item>
 
-                  <DeleteOutlined onClick={() => remove(name)} style={{ color: '#FF4D4F' }} />
+                  {fields.length > 1 && (
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => remove(name)}
+                    />
+                  )}
                 </Space>
               ))}
 
@@ -90,16 +122,24 @@ export const PrCreateForm: React.FC = () => {
           )}
         </Form.List>
 
-        <div style={{ textAlign: 'right', marginTop: 24 }}>
-          <Text strong style={{ fontSize: 16 }}>
+        <div style={{ textAlign: 'right', marginTop: 24, padding: '12px 0', borderTop: '1px solid #f0f0f0' }}>
+          <Text strong style={{ fontSize: 18, color: '#0052CC' }}>
             Total Estimasi Anggaran: {formatRupiah(grandTotal)}
           </Text>
         </div>
       </Card>
 
-      <Button type="primary" htmlType="submit" size="large" style={{ marginTop: 24 }}>
-        Kirim Permintaan Pembelian
+      <Button
+        type="primary"
+        htmlType="submit"
+        size="large"
+        icon={<SendOutlined />}
+        style={{ marginTop: 24 }}
+      >
+        Kirim Permintaan Pembelian (Submit PR)
       </Button>
     </Form>
   );
 };
+
+export default PrCreateForm;
