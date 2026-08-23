@@ -3,6 +3,7 @@ import { Layout, Menu, Typography, Grid } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { RoleSwitcher } from './RoleSwitcher';
+import { DemoPersonaBar } from './DemoPersonaBar';
 import { getNavigationMenuItemsForRole } from './navigation';
 
 const { Header, Content, Sider } = Layout;
@@ -23,6 +24,7 @@ export const AppLayout: React.FC = () => {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
+      <DemoPersonaBar />
       <Header
         style={{
           display: 'flex',
