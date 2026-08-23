@@ -15,13 +15,13 @@ export type { RecordGoodsReceiptInput, ReceiptWithDetails, GoodsReceiptRecord, N
 
 function generateGrNumber(): string {
   const dateStr = new Date().toISOString().slice(0, 7).replace('-', '');
-  const randomSuffix = Math.floor(10000 + Math.random() * 90000);
+  const randomSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
   return `GR-${dateStr}-${randomSuffix}`;
 }
 
 function generateNcrNumber(): string {
   const dateStr = new Date().toISOString().slice(0, 7).replace('-', '');
-  const randomSuffix = Math.floor(10000 + Math.random() * 90000);
+  const randomSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
   return `NCR-${dateStr}-${randomSuffix}`;
 }
 
