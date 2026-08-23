@@ -25,6 +25,14 @@ export async function createPurchaseOrder(input: CreatePoInput): Promise<Purchas
   const poId = crypto.randomUUID();
   const poNumber = generatePoNumber();
 
+  const vendorRepo = new VendorRepository();
+  const vendor = await vendorRepo.findVendorById(validated.vendorId);
+  if (vendor && vendor.status === 'BLACKLISTED') {
+    throw new Error(
+      `Pembuatan PO ditolak (R65): Vendor '${vendor.name}' berstatus BLACKLISTED.`
+    );
+  }
+
   let subtotalAmount = 0;
   const itemsToInsert = validated.items.map((item, idx) => {
     const qty = Number(item.quantityOrdered);
@@ -92,11 +100,11 @@ export async function issuePurchaseOrder(poId: string, _userId: string): Promise
     throw new Error(`Purchase Order '${poId}' tidak ditemukan.`);
   }
 
-  // R24: Verification Guard - Vendor and Bank Account must be approved / verified
+  // R24 & R65: Verification Guard & Blacklist Guard
   const vendor = await vendorRepo.findVendorById(po.vendorId);
   if (!vendor || vendor.status !== 'APPROVED') {
     throw new Error(
-      `Penerbitan PO ditolak (R24): Vendor '${vendor?.name || po.vendorId}' belum berstatus APPROVED (status saat ini: ${vendor?.status || 'UNKNOWN'}).`
+      `Penerbitan PO ditolak (R24/R65): Vendor '${vendor?.name || po.vendorId}' belum berstatus APPROVED (status saat ini: ${vendor?.status || 'UNKNOWN'}).`
     );
   }
 
@@ -134,10 +142,19 @@ export async function updatePurchaseOrderDirect(
 export async function amendPurchaseOrder(input: AmendPoInput): Promise<PoAmendmentHistoryRecord> {
   return await withTransaction(async (tx) => {
     const repo = new PoRepository(tx);
-    const po = await repo.findPoById(input.poId);
+    const vendorRepo = new VendorRepository(tx);
 
+    const po = await repo.findPoById(input.poId);
     if (!po) {
       throw new Error(`Purchase Order '${input.poId}' tidak ditemukan.`);
+    }
+
+    // R65: Vendor Blacklist guard on amendment
+    const vendor = await vendorRepo.findVendorById(po.vendorId);
+    if (vendor && vendor.status === 'BLACKLISTED') {
+      throw new Error(
+        `Amendemen PO ditolak (R65): Vendor '${vendor.name}' berstatus BLACKLISTED.`
+      );
     }
 
     if (po.status !== 'ISSUED' && po.status !== 'AMENDED') {
