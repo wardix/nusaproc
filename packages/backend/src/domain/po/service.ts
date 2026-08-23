@@ -16,7 +16,7 @@ export type { CreatePoInput, AmendPoInput, PoWithDetails, PurchaseOrderRecord, P
 
 function generatePoNumber(): string {
   const dateStr = new Date().toISOString().slice(0, 7).replace('-', '');
-  const randomSuffix = Math.floor(10000 + Math.random() * 90000);
+  const randomSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
   return `PO-${dateStr}-${randomSuffix}`;
 }
 
