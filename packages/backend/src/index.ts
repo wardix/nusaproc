@@ -3,6 +3,7 @@ import { config } from './config';
 import { createPrApp } from './domain/pr/routes';
 import { createPoAndVendorApp } from './domain/po/routes';
 import { createReceiptApp } from './domain/receipt/routes';
+import { createInvoiceApp } from './domain/invoice/routes';
 
 const app = new Hono();
 
@@ -18,6 +19,7 @@ const apiV1 = new Hono();
 apiV1.route('/', createPrApp());
 apiV1.route('/', createPoAndVendorApp());
 apiV1.route('/', createReceiptApp());
+apiV1.route('/', createInvoiceApp());
 
 app.route('/api/v1', apiV1);
 
