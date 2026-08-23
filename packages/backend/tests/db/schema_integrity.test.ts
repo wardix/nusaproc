@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'bun:test';
 import { sql } from '../../src/db/client';
 import { runMigrations } from '../../src/db/migrate';
+import { recordAuditTrailEntry } from '../../src/domain/audit/service';
 
 describe('Database Schema Integrity & DDL Constraints', () => {
   beforeAll(async () => {
@@ -236,30 +237,23 @@ describe('Database Schema Integrity & DDL Constraints', () => {
   describe('3. Audit Trail Anti-Tamper & Immutability Rules', () => {
     it('prevents modification (UPDATE) of audit trail records', async () => {
       const entityId = crypto.randomUUID();
-      const uniqueHash = `hash_${crypto.randomUUID()}`;
 
-      await sql`
-        INSERT INTO audit_trail_entry (
-          action_type, entity_name, entity_id,
-          ip_address, current_entry_hash
-        ) VALUES (
-          'CREATE_PR', 'purchase_request', ${entityId},
-          '192.168.1.100', ${uniqueHash}
-        )
-      `;
-
-      const entriesBefore = await sql`SELECT * FROM audit_trail_entry WHERE current_entry_hash = ${uniqueHash}`;
-      expect(entriesBefore.length).toBe(1);
-      const originalEntry = entriesBefore[0];
+      const entry = await recordAuditTrailEntry({
+        actionType: 'CREATE_PR',
+        entityName: 'purchase_request',
+        entityId,
+        ipAddress: '192.168.1.100',
+        justification: 'Initial PR creation for anti-tamper test',
+      });
 
       // Attempt UPDATE
       await sql`
         UPDATE audit_trail_entry
         SET action_type = 'TAMPERED_ACTION'
-        WHERE current_entry_hash = ${uniqueHash}
+        WHERE id = ${entry.id}
       `;
 
-      const entriesAfter = await sql`SELECT * FROM audit_trail_entry WHERE id = ${originalEntry.id}`;
+      const entriesAfter = await sql`SELECT * FROM audit_trail_entry WHERE id = ${entry.id}`;
       expect(entriesAfter.length).toBe(1);
       // Rule no_update_audit prevents any modification (value remains CREATE_PR)
       expect(entriesAfter[0].action_type).toBe('CREATE_PR');
@@ -267,29 +261,22 @@ describe('Database Schema Integrity & DDL Constraints', () => {
 
     it('prevents deletion (DELETE) of audit trail records', async () => {
       const entityId = crypto.randomUUID();
-      const uniqueHash = `hash_${crypto.randomUUID()}`;
 
-      await sql`
-        INSERT INTO audit_trail_entry (
-          action_type, entity_name, entity_id,
-          ip_address, current_entry_hash
-        ) VALUES (
-          'CREATE_PO', 'purchase_order', ${entityId},
-          '192.168.1.100', ${uniqueHash}
-        )
-      `;
-
-      const entriesBefore = await sql`SELECT * FROM audit_trail_entry WHERE current_entry_hash = ${uniqueHash}`;
-      expect(entriesBefore.length).toBe(1);
-      const entryId = entriesBefore[0].id;
+      const entry = await recordAuditTrailEntry({
+        actionType: 'CREATE_PO',
+        entityName: 'purchase_order',
+        entityId,
+        ipAddress: '192.168.1.100',
+        justification: 'Initial PO creation for anti-delete test',
+      });
 
       // Attempt DELETE
       await sql`
         DELETE FROM audit_trail_entry
-        WHERE current_entry_hash = ${uniqueHash}
+        WHERE id = ${entry.id}
       `;
 
-      const entriesAfter = await sql`SELECT * FROM audit_trail_entry WHERE id = ${entryId}`;
+      const entriesAfter = await sql`SELECT * FROM audit_trail_entry WHERE id = ${entry.id}`;
       // Rule no_delete_audit prevents deletion (row remains intact)
       expect(entriesAfter.length).toBe(1);
     });
