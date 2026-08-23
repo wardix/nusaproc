@@ -1,8 +1,11 @@
+import React from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { ActionDashboard } from './features/dashboard/ActionDashboard';
 import { PrCreateForm } from './features/pr/components/PrCreateForm';
 import { TwoWayMatcherScreen } from './features/invoice/components/TwoWayMatcherScreen';
+import { BastCreateForm } from './features/receipt/components/BastCreateForm';
+import { PaymentWorkflowSteps } from './features/payment/components/PaymentWorkflowSteps';
 
 export const router: ReturnType<typeof createBrowserRouter> = createBrowserRouter([
   {
@@ -45,7 +48,7 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
       },
       {
         path: 'receipts',
-        element: <div>Penerimaan Barang & BAST</div>,
+        element: <BastCreateForm />,
       },
       {
         path: 'ncr',
@@ -53,7 +56,14 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
       },
       {
         path: 'payments',
-        element: <div>Proposal & Eksekusi Pembayaran</div>,
+        element: (
+          <PaymentWorkflowSteps
+            status="PENDING_CHECK"
+            makerName="Andi (Finance Staff)"
+            checkerName="Siti (Head of AP)"
+            executorName="Budi (Treasury)"
+          />
+        ),
       },
       {
         path: 'audit',
