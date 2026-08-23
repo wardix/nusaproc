@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
+import { ActionDashboard } from './features/dashboard/ActionDashboard';
 import { PrCreateForm } from './features/pr/components/PrCreateForm';
 import { TwoWayMatcherScreen } from './features/invoice/components/TwoWayMatcherScreen';
 
@@ -10,7 +11,11 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
     children: [
       {
         index: true,
-        element: <Navigate to="/pr" replace />,
+        element: <Navigate to="/dashboard" replace />,
+      },
+      {
+        path: 'dashboard',
+        element: <ActionDashboard />,
       },
       {
         path: 'pr',
@@ -33,6 +38,22 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
       {
         path: 'po',
         element: <div>Daftar Surat Pesanan (PO)</div>,
+      },
+      {
+        path: 'vendors',
+        element: <div>Manajemen Vendor & Rekening Bank</div>,
+      },
+      {
+        path: 'receipts',
+        element: <div>Penerimaan Barang & BAST</div>,
+      },
+      {
+        path: 'ncr',
+        element: <div>Laporan Ketidaksesuaian (NCR)</div>,
+      },
+      {
+        path: 'payments',
+        element: <div>Proposal & Eksekusi Pembayaran</div>,
       },
       {
         path: 'audit',

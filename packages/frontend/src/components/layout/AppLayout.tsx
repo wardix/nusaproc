@@ -1,58 +1,86 @@
-import React from 'react';
-import { Layout, Menu, Typography, Dropdown, Space, Avatar } from 'antd';
-import { UserOutlined, ShoppingCartOutlined, FileDoneOutlined, DollarOutlined, AuditOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Layout, Menu, Typography, Grid } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
-import { APP_ROLES, type AppRole } from '@nusaproc/shared';
+import { RoleSwitcher } from './RoleSwitcher';
+import { getNavigationMenuItemsForRole } from './navigation';
 
 const { Header, Content, Sider } = Layout;
-const { Text, Title } = Typography;
+const { Title } = Typography;
+const { useBreakpoint } = Grid;
 
 export const AppLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, setActiveRole } = useAuthStore();
+  const screens = useBreakpoint();
+  const { user } = useAuthStore();
+  const [collapsed, setCollapsed] = useState(false);
 
-  const menuItems = [
-    { key: '/pr', icon: <ShoppingCartOutlined />, label: 'Purchase Request (PR)' },
-    { key: '/po', icon: <FileDoneOutlined />, label: 'Purchase Order (PO)' },
-    { key: '/invoices', icon: <DollarOutlined />, label: 'Invoices & 2-Way Match' },
-    { key: '/audit', icon: <AuditOutlined />, label: 'Audit Trail' },
-  ];
+  const activeRole = user?.activeRole || 'REQUESTER';
+  const menuItems = getNavigationMenuItemsForRole(activeRole);
 
-  const roleDropdownItems = APP_ROLES.map((role) => ({
-    key: role,
-    label: role,
-    onClick: () => setActiveRole(role as AppRole),
-  }));
+  const isMobile = !screens.md;
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', background: '#0052CC' }}>
-        <Title level={4} style={{ color: '#fff', margin: 0 }}>
-          NusaProc
-        </Title>
-        <Space>
-          <Dropdown menu={{ items: roleDropdownItems }} trigger={['click']}>
-            <span style={{ color: '#fff', cursor: 'pointer' }}>
-              <Avatar size="small" icon={<UserOutlined />} style={{ marginRight: 8 }} />
-              <Text style={{ color: '#fff' }}>{user?.activeRole || 'Pilih Peran'}</Text>
-            </span>
-          </Dropdown>
-        </Space>
+      <Header
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 20px',
+          background: '#0052CC',
+          height: 64,
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Title level={4} style={{ color: '#fff', margin: 0, letterSpacing: -0.5 }}>
+            NusaProc
+          </Title>
+        </div>
+        <RoleSwitcher />
       </Header>
       <Layout>
-        <Sider width={240} theme="light">
+        <Sider
+          width={240}
+          collapsible
+          collapsed={isMobile ? true : collapsed}
+          onCollapse={(value) => setCollapsed(value)}
+          theme="light"
+          breakpoint="lg"
+          collapsedWidth={isMobile ? 0 : 80}
+          style={{
+            overflow: 'auto',
+            height: 'calc(100vh - 64px)',
+            position: 'sticky',
+            top: 64,
+            left: 0,
+            borderRight: '1px solid #f0f0f0',
+          }}
+        >
           <Menu
             mode="inline"
             selectedKeys={[location.pathname]}
             items={menuItems}
             onClick={({ key }) => navigate(key)}
-            style={{ height: '100%', borderRight: 0 }}
+            style={{ borderRight: 0, paddingTop: 8 }}
           />
         </Sider>
-        <Layout style={{ padding: '24px' }}>
-          <Content style={{ background: '#fff', padding: 24, margin: 0, minHeight: 280, borderRadius: 6 }}>
+        <Layout style={{ padding: isMobile ? '12px' : '24px' }}>
+          <Content
+            style={{
+              background: '#fff',
+              padding: isMobile ? 16 : 24,
+              margin: 0,
+              minHeight: 280,
+              borderRadius: 8,
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+            }}
+          >
             <Outlet />
           </Content>
         </Layout>
@@ -60,3 +88,5 @@ export const AppLayout: React.FC = () => {
     </Layout>
   );
 };
+
+export default AppLayout;
