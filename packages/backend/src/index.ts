@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { config } from './config';
 import { createPrApp } from './domain/pr/routes';
+import { createPoAndVendorApp } from './domain/po/routes';
 
 const app = new Hono();
 
@@ -14,6 +15,7 @@ app.get('/health', (c) => {
 
 const apiV1 = new Hono();
 apiV1.route('/', createPrApp());
+apiV1.route('/', createPoAndVendorApp());
 
 app.route('/api/v1', apiV1);
 
