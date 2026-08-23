@@ -5,6 +5,8 @@ import { createPoAndVendorApp } from './domain/po/routes';
 import { createReceiptApp } from './domain/receipt/routes';
 import { createInvoiceApp } from './domain/invoice/routes';
 import { createPaymentApp } from './domain/payment/routes';
+import { createAuditApp } from './domain/audit/routes';
+import { auditorSandboxMiddleware } from './middleware/auditor_sandbox';
 
 const app = new Hono();
 
@@ -17,11 +19,13 @@ app.get('/health', (c) => {
 });
 
 const apiV1 = new Hono();
+apiV1.use('*', auditorSandboxMiddleware());
 apiV1.route('/', createPrApp());
 apiV1.route('/', createPoAndVendorApp());
 apiV1.route('/', createReceiptApp());
 apiV1.route('/', createInvoiceApp());
 apiV1.route('/', createPaymentApp());
+apiV1.route('/', createAuditApp());
 
 app.route('/api/v1', apiV1);
 

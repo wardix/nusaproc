@@ -1,5 +1,4 @@
 export * from './types';
-export * from './hasher';
+export * from './zip';
 export * from './repository';
 export * from './service';
-export * from './routes';
