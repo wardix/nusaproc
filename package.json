@@ -13,14 +13,17 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "db:migrate": "bun packages/backend/src/db/migrate.ts",
+    "db:seed": "bun packages/backend/src/db/seed.ts",
     "dev:backend": "bun --filter @nusaproc/backend dev",
-    "dev:frontend": "bun --filter @nusaproc/frontend dev"
+    "dev:frontend": "bun --filter @nusaproc/frontend dev",
+    "dev": "concurrently -n 'backend,frontend' -c 'blue,green' 'bun run dev:backend' 'bun run dev:frontend'"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^20.12.7",
     "@typescript-eslint/eslint-plugin": "^7.8.0",
     "@typescript-eslint/parser": "^7.8.0",
+    "concurrently": "^10.0.5",
     "eslint": "^8.57.0",
     "typescript": "^5.4.5"
   }
