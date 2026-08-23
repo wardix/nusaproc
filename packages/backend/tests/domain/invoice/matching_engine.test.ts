@@ -143,7 +143,7 @@ describe('Epic 7: [Invoice & Tax] Dual-NSFP, Tax Snapshot & 2-Way Matching Engin
 
   describe('2. Anti-Duplicate Invoice Detection (R34)', () => {
     it('rejects duplicate invoice entry with identical vendor, number, date and amount', async () => {
-      const invNumber = `INV-DUP-${crypto.randomUUID().slice(0, 6)}`;
+      const invNumber = `INV-DUP-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
       const input: CreateInvoiceInput = {
         vendorId,
         poId: testPoId,
@@ -177,7 +177,7 @@ describe('Epic 7: [Invoice & Tax] Dual-NSFP, Tax Snapshot & 2-Way Matching Engin
   describe('3. Tax Rule Snapshot Immutability (R36)', () => {
     it('preserves historical invoice tax amounts even when new tax snapshots are introduced', async () => {
       // 1. Create invoice with current snapshot (PPN 12%)
-      const invNumber = `INV-TAX-${crypto.randomUUID().slice(0, 6)}`;
+      const invNumber = `INV-TAX-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
       const invoice = await createInvoice({
         vendorId,
         poId: testPoId,
@@ -210,7 +210,7 @@ describe('Epic 7: [Invoice & Tax] Dual-NSFP, Tax Snapshot & 2-Way Matching Engin
   describe('4. 2-Way Matching Engine & Tolerance Thresholds (R37, R38)', () => {
     it('R38: Evaluates exact match and tolerance within Rp 100.000 as MATCHED_OK', async () => {
       // Invoice with Rp 50,000 minor variance (within Rp 100,000 tolerance)
-      const invNumber = `INV-OK-${crypto.randomUUID().slice(0, 6)}`;
+      const invNumber = `INV-OK-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
       const invoice = await createInvoice({
         vendorId,
         poId: testPoId,
@@ -236,7 +236,7 @@ describe('Epic 7: [Invoice & Tax] Dual-NSFP, Tax Snapshot & 2-Way Matching Engin
 
     it('R38: Flags invoice with 5% variance as MATCHED_WITH_EXCEPTION and holds for payment', async () => {
       // Invoice with 5% variance (Rp 5,600,000 > Rp 100,000 and 5% > 1%)
-      const invNumber = `INV-EXC-${crypto.randomUUID().slice(0, 6)}`;
+      const invNumber = `INV-EXC-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
       const excessAmount = testPoGrandTotal * 1.05; // 117,600,000
       const invoice = await createInvoice({
         vendorId,
@@ -266,7 +266,7 @@ describe('Epic 7: [Invoice & Tax] Dual-NSFP, Tax Snapshot & 2-Way Matching Engin
 
   describe('5. Matching Exception Override by Head of AP (R39)', () => {
     it('R39: Rejects exception override attempted by unauthorized user', async () => {
-      const invNumber = `INV-OVR-FAIL-${crypto.randomUUID().slice(0, 6)}`;
+      const invNumber = `INV-OVR-FAIL-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
       const invoice = await createInvoice({
         vendorId,
         poId: testPoId,
@@ -298,7 +298,7 @@ describe('Epic 7: [Invoice & Tax] Dual-NSFP, Tax Snapshot & 2-Way Matching Engin
     });
 
     it('R39: Allows authorized Head of AP to override exception with mandatory written reason', async () => {
-      const invNumber = `INV-OVR-OK-${crypto.randomUUID().slice(0, 6)}`;
+      const invNumber = `INV-OVR-OK-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
       const invoice = await createInvoice({
         vendorId,
         poId: testPoId,
@@ -344,7 +344,7 @@ describe('Epic 7: [Invoice & Tax] Dual-NSFP, Tax Snapshot & 2-Way Matching Engin
         body: JSON.stringify({
           vendorId,
           poId: testPoId,
-          vendorInvoiceNumber: `INV-API-${crypto.randomUUID().slice(0, 6)}`,
+          vendorInvoiceNumber: `INV-API-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`,
           invoiceDate: '2026-08-23',
           dueDate: '2026-09-23',
           subtotalAmount: 104_000_000,

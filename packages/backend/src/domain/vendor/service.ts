@@ -13,8 +13,9 @@ import {
 export type { CreateVendorInput, CreateBankAccountInput, VerifyBankAccountInput, VendorRecord, VendorBankAccountRecord };
 
 function generateVendorCode(): string {
+  const timeHex = Date.now().toString(36).toUpperCase();
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-  return `VEND-${randomSuffix}`;
+  return `VEND-${timeHex}-${randomSuffix}`;
 }
 
 export async function createVendor(input: CreateVendorInput): Promise<VendorRecord> {
