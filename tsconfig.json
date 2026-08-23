@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@nusaproc/shared": ["packages/shared/src"],
+      "@nusaproc/shared/*": ["packages/shared/src/*"],
+      "@nusaproc/backend/*": ["packages/backend/src/*"],
+      "@nusaproc/frontend/*": ["packages/frontend/src/*"]
+    },
+    "types": ["bun", "node"]
+  },
+  "exclude": ["node_modules", "dist", "build"]
+}
