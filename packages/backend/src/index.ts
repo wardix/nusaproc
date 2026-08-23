@@ -8,26 +8,31 @@ import { createPaymentApp } from './domain/payment/routes';
 import { createAuditApp } from './domain/audit/routes';
 import { auditorSandboxMiddleware } from './middleware/auditor_sandbox';
 
-const app = new Hono();
+export function createApp(): Hono {
+  const app = new Hono();
 
-app.get('/health', (c) => {
-  return c.json({
-    status: 'ok',
-    service: 'nusaproc-backend',
-    timestamp: new Date().toISOString(),
+  app.get('/health', (c) => {
+    return c.json({
+      status: 'ok',
+      service: 'nusaproc-backend',
+      timestamp: new Date().toISOString(),
+    });
   });
-});
 
-const apiV1 = new Hono();
-apiV1.use('*', auditorSandboxMiddleware());
-apiV1.route('/', createPrApp());
-apiV1.route('/', createPoAndVendorApp());
-apiV1.route('/', createReceiptApp());
-apiV1.route('/', createInvoiceApp());
-apiV1.route('/', createPaymentApp());
-apiV1.route('/', createAuditApp());
+  const apiV1 = new Hono();
+  apiV1.use('*', auditorSandboxMiddleware());
+  apiV1.route('/', createPrApp());
+  apiV1.route('/', createPoAndVendorApp());
+  apiV1.route('/', createReceiptApp());
+  apiV1.route('/', createInvoiceApp());
+  apiV1.route('/', createPaymentApp());
+  apiV1.route('/', createAuditApp());
 
-app.route('/api/v1', apiV1);
+  app.route('/api/v1', apiV1);
+  return app;
+}
+
+export const app = createApp();
 
 export default {
   port: config.port,
