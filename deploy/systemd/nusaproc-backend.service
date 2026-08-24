@@ -1,0 +1,36 @@
+[Unit]
+Description=NusaProc Enterprise Procurement Backend Service (Bun)
+Documentation=https://github.com/wardix/nusaproc
+After=network.target postgresql.service redis.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nusaproc
+Group=nusaproc
+WorkingDirectory=/opt/nusaproc/packages/backend
+EnvironmentFile=/opt/nusaproc/.env
+ExecStart=/usr/local/bin/bun run src/index.ts
+Restart=always
+RestartSec=5s
+
+# Security Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictRealtime=true
+
+# Resource Limits
+LimitNOFILE=65535
+LimitNPROC=4096
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nusaproc-backend
+
+[Install]
+WantedBy=multi-user.target
