@@ -119,7 +119,7 @@ bun install
 ### 3. Konfigurasi Lingkungan (`.env`)
 Buat berkas `.env` di root direktori project:
 ```env
-DATABASE_URL=postgres://nusaproc_dev:afc3ea275090b6bc20f8cafbe56c8c04@dbb.nusa.net.id:5432/nusaproc_dev
+DATABASE_URL=postgres://nusaproc_user:your_secure_password@localhost:5432/nusaproc_db
 PORT=3000
 NODE_ENV=development
 JWT_SECRET=super-secret-dev-jwt-key-min-32-chars-long
