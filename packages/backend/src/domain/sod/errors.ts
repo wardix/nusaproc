@@ -100,6 +100,36 @@ export class ForbiddenError extends AppError {
   }
 }
 
+export class ConflictError extends AppError {
+  readonly statusCode = 409;
+  readonly type = 'https://nusaproc.nusanet.net.id/errors/conflict';
+  readonly title = 'Conflict';
+
+  constructor(message = 'Konflik data terdeteksi', ruleCode = 'DATA_CONFLICT') {
+    super(message, ruleCode);
+  }
+}
+
+export class NotFoundError extends AppError {
+  readonly statusCode = 404;
+  readonly type = 'https://nusaproc.nusanet.net.id/errors/not-found';
+  readonly title = 'Not Found';
+
+  constructor(message = 'Sumber daya yang diminta tidak ditemukan', ruleCode = 'NOT_FOUND') {
+    super(message, ruleCode);
+  }
+}
+
+export class ValidationError extends AppError {
+  readonly statusCode = 400;
+  readonly type = 'https://nusaproc.nusanet.net.id/errors/validation-error';
+  readonly title = 'Validation Error';
+
+  constructor(message = 'Data input tidak valid', ruleCode = 'VALIDATION_FAILED') {
+    super(message, ruleCode);
+  }
+}
+
 export function formatProblemDetails(error: unknown, instance?: string): ProblemDetails {
   if (error instanceof AppError) {
     return error.toProblemDetails(instance);

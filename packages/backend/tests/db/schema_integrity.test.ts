@@ -287,10 +287,11 @@ describe('Database Schema Integrity & DDL Constraints', () => {
       const adminUsers = await sql`
         SELECT id, email, is_local_fallback, is_active
         FROM app_user
-        WHERE is_local_fallback = TRUE
+        WHERE email = 'admin@nusanet.net.id'
       `;
-      expect(adminUsers.length).toBeGreaterThanOrEqual(1);
+      expect(adminUsers.length).toBe(1);
       expect(adminUsers[0].email).toBe('admin@nusanet.net.id');
+      expect(adminUsers[0].is_local_fallback).toBe(true);
 
       const adminRole = await sql`
         SELECT role FROM user_role_assignment WHERE user_id = ${adminUsers[0].id}
@@ -315,7 +316,7 @@ describe('Database Schema Integrity & DDL Constraints', () => {
       const indices = await sql`
         SELECT indexname
         FROM pg_indexes
-        WHERE schemaname = 'public'
+        WHERE schemaname = current_schema() OR schemaname = 'public'
       `;
       const indexNames = indices.map((row: { indexname: string }) => row.indexname);
 

@@ -6,3 +6,5 @@ export * from './endpoints/receipt';
 export * from './endpoints/invoice';
 export * from './endpoints/payment';
 export * from './endpoints/audit';
+export * from './endpoints/auth';
+export * from './endpoints/user';

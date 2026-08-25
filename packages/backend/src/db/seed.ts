@@ -7,11 +7,13 @@ export async function runSeed(): Promise<{ success: boolean; message: string }> 
   await runMigrations();
 
   console.log('[Seed] Seeding realistic PT Nusanet users and roles...');
+  const defaultPasswordHash = await Bun.password.hash('Password123!', 'bcrypt');
+
   for (const persona of DEMO_PERSONAS) {
     await sql`
       INSERT INTO app_user (
         id, email, full_name, employee_id, division_id, branch_id,
-        is_active, is_local_fallback, totp_enabled
+        is_active, is_local_fallback, local_password_hash, totp_enabled
       ) VALUES (
         ${persona.id},
         ${persona.email},
@@ -20,7 +22,8 @@ export async function runSeed(): Promise<{ success: boolean; message: string }> 
         ${persona.divisionId},
         ${persona.branchId},
         TRUE,
-        ${persona.role === 'ADMIN'},
+        TRUE,
+        ${defaultPasswordHash},
         ${persona.role === 'ADMIN'}
       )
       ON CONFLICT (email) DO UPDATE SET
@@ -28,6 +31,8 @@ export async function runSeed(): Promise<{ success: boolean; message: string }> 
         employee_id = EXCLUDED.employee_id,
         division_id = EXCLUDED.division_id,
         branch_id = EXCLUDED.branch_id,
+        local_password_hash = EXCLUDED.local_password_hash,
+        is_local_fallback = TRUE,
         is_active = TRUE
     `;
 

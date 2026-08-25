@@ -10,8 +10,14 @@ import { ReceiptListPage } from './features/receipt/pages/ReceiptListPage';
 import { BastCreateForm } from './features/receipt/components/BastCreateForm';
 import { PaymentListPage } from './features/payment/pages/PaymentListPage';
 import { AuditLogPage } from './features/audit/pages/AuditLogPage';
+import { LoginPage } from './features/auth/pages/LoginPage';
+import { AdminUsersPage } from './features/admin/pages/AdminUsersPage';
 
 export const router: ReturnType<typeof createBrowserRouter> = createBrowserRouter([
+  {
+    path: '/login',
+    element: <LoginPage />,
+  },
   {
     path: '/',
     element: <AppLayout />,
@@ -63,6 +69,10 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
       {
         path: 'audit',
         element: <AuditLogPage />,
+      },
+      {
+        path: 'admin/users',
+        element: <AdminUsersPage />,
       },
     ],
   },
