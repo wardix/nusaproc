@@ -4,8 +4,7 @@
 [![Runtime](https://img.shields.io/badge/Runtime-Bun%201.1%2B-black?logo=bun)](https://bun.sh)
 [![Backend](https://img.shields.io/badge/Backend-TypeScript%20%7C%20Raw%20SQL-blue?logo=typescript)](https://www.typescriptlang.org)
 [![Database](https://img.shields.io/badge/Database-PostgreSQL%2016-336791?logo=postgresql)](https://www.postgresql.org)
-[![Frontend](https://img.shields.io/badge/Frontend-React%2018%20%7C%20Ant%20Design%20v5-0170FE?logo=antdesign)](https://ant.design)
-[![Tests](https://img.shields.io/badge/Tests-145%20Passing%20(100%25)-success)](packages/backend/tests)
+[![Tests](https://img.shields.io/badge/Tests-163%20Passing%20(100%25)-success)](packages/backend/tests)
 
 Sistem pengadaan barang dan jasa internal terintegrasi untuk **PT Media Antar Nusa (Nusanet)**. NusaProc menggantikan proses pengadaan manual (chat, email, spreadsheet) menjadi satu *single source of truth* dengan penegakan kepatuhan otomatis, *Separation of Duties (SoD)* 5-lapis, pencegahan *fraud*, verifikasi rekening bank 4-Mata, pencocokan invoice otomatis (*2-Way Matching Engine*), alur pembayaran *Maker-Checker-Executor*, jejak audit kriptografis berantai (*SHA-256 Hash Chaining*), dan kalkulasi pajak presisi (Dual-NSFP & Coretax).
 
@@ -168,7 +167,7 @@ Sistem dilengkapi dengan 8 persona demo realistis. Anda dapat beralih peran seca
 NusaProc menerapkan protokol **Test-Driven Development (TDD)** yang ketat:
 
 ```bash
-# Menjalankan seluruh 145 test suites (Unit, Domain, Integration, E2E)
+# Menjalankan seluruh 163 test suites (Unit, Domain, Integration, E2E)
 bun test
 
 # Pengecekan tipe data TypeScript statis
