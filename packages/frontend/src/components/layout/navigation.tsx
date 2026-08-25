@@ -10,6 +10,7 @@ import {
   BankOutlined,
   AuditOutlined,
   DashboardOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import type { AppRole } from '@nusaproc/shared';
 import type { MenuProps } from 'antd';
@@ -149,6 +150,11 @@ export function getNavigationMenuItemsForRole(role: AppRole): MenuItem[] {
           key: '/audit',
           icon: <AuditOutlined />,
           label: 'Audit Trail',
+        },
+        {
+          key: '/admin/users',
+          icon: <TeamOutlined />,
+          label: 'Manajemen Pengguna & Hak Akses',
         },
       ];
   }
