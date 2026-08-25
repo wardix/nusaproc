@@ -9,6 +9,8 @@ export interface AppConfig {
   clamavHost?: string;
   clamavPort?: number;
   corsOrigin?: string;
+  googleClientId?: string;
+  googleAllowedDomain: string;
 }
 
 export const config: AppConfig = {
@@ -22,4 +24,6 @@ export const config: AppConfig = {
   clamavHost: process.env.CLAMAV_HOST,
   clamavPort: process.env.CLAMAV_PORT ? Number(process.env.CLAMAV_PORT) : undefined,
   corsOrigin: process.env.CORS_ORIGIN || '*',
+  googleClientId: process.env.GOOGLE_CLIENT_ID,
+  googleAllowedDomain: process.env.GOOGLE_ALLOWED_DOMAIN || 'nusanet.net.id',
 };
