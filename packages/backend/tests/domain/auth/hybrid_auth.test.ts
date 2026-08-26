@@ -138,7 +138,7 @@ describe('Epic 19: [Hybrid Auth] Google Workspace SSO & Local Fallback Login (R1
       expect(json.data.user.activeRole).toBe('APPROVER');
     });
 
-    it('rejects Google account not belonging to @nusanet.net.id domain with 403 Forbidden', async () => {
+    it('rejects Google account not belonging to allowed Nusanet domains with 403 Forbidden', async () => {
       const mockExternalGooglePayload = JSON.stringify({
         email: 'attacker@gmail.com',
         name: 'External Attacker',
@@ -156,7 +156,29 @@ describe('Epic 19: [Hybrid Auth] Google Workspace SSO & Local Fallback Login (R1
 
       expect(res.status).toBe(403);
       const json = await res.json();
-      expect(json.detail).toContain('@nusanet.net.id');
+      expect(json.detail).toContain('Google Workspace resmi');
+    });
+
+    it('successfully allows Google account from @nusa.id domain', async () => {
+      const mockNusaIdPayload = JSON.stringify({
+        email: 'wardix@nusa.id',
+        name: 'Wardi',
+        hd: 'nusa.id',
+        sub: 'google-oauth2-wardix-1234',
+      });
+
+      const res = await app.request('/api/v1/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          credential: mockNusaIdPayload,
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.user.email).toBe('wardix@nusa.id');
     });
 
     it('performs Just-In-Time (JIT) provisioning for new Nusanet employee on first login', async () => {

@@ -2,6 +2,7 @@ import { sql, withTransaction } from '../../db/client';
 import { UnauthorizedError, ForbiddenError, ConflictError, NotFoundError } from '../sod/errors';
 import { generateAuthToken } from './token';
 import { deactivateUserAndRevokeDelegations } from '../integration/delegation_worker';
+import { config } from '../../config';
 import type { AppRole } from '@nusaproc/shared';
 import type {
   LoginInput,
@@ -141,9 +142,27 @@ export async function loginWithGoogleSso(input: GoogleAuthInput): Promise<AuthSu
     throw new UnauthorizedError('Email tidak ditemukan dalam token Google');
   }
 
-  const isNusanetDomain = email.endsWith('@nusanet.net.id') || payload.hd === 'nusanet.net.id';
-  if (!isNusanetDomain) {
-    throw new ForbiddenError('Akses hanya diizinkan untuk akun Google Workspace PT Nusanet (@nusanet.net.id)');
+  const rawDomains = config.googleAllowedDomain || 'nusa.id,nusanet.net.id,nusa.net.id';
+  const allowedDomains = rawDomains
+    .split(',')
+    .map((d) => d.trim().toLowerCase().replace(/^@/, ''))
+    .filter(Boolean);
+
+  const emailDomain = email.split('@')[1] || '';
+  const hd = payload.hd?.toLowerCase();
+
+  const isAllowedDomain = allowedDomains.some((d) => {
+    return (
+      emailDomain === d ||
+      emailDomain.endsWith(`.${d}`) ||
+      (hd && (hd === d || hd.endsWith(`.${d}`)))
+    );
+  });
+
+  if (!isAllowedDomain) {
+    throw new ForbiddenError(
+      `Akses hanya diizinkan untuk akun Google Workspace resmi (${allowedDomains.map((d) => `@${d}`).join(', ')})`
+    );
   }
 
   let user = (
