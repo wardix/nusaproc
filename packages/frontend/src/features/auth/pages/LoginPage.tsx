@@ -101,10 +101,10 @@ export const LoginPage: React.FC = () => {
             <SafetyCertificateOutlined />
           </div>
           <Title level={3} style={{ margin: 0, color: '#002766' }}>
-            NusaProc
+            {import.meta.env.VITE_APP_NAME || 'NusaProc'}
           </Title>
           <Text type="secondary" style={{ fontSize: 13 }}>
-            Sistem Pengadaan Terpadu PT Nusanet
+            {import.meta.env.VITE_APP_SUBTITLE || 'Sistem Pengadaan Terpadu PT Nusanet'}
           </Text>
         </div>
 

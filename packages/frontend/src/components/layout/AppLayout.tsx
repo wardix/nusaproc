@@ -41,7 +41,7 @@ export const AppLayout: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Title level={4} style={{ color: '#fff', margin: 0, letterSpacing: -0.5 }}>
-            NusaProc
+            {import.meta.env.VITE_APP_NAME || 'NusaProc'}
           </Title>
         </div>
         <RoleSwitcher />
