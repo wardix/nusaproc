@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Layout, Menu, Typography, Grid } from 'antd';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { RoleSwitcher } from './RoleSwitcher';
-import { DemoPersonaBar } from './DemoPersonaBar';
 import { getNavigationMenuItemsForRole } from './navigation';
 
 const { Header, Content, Sider } = Layout;
@@ -14,8 +13,13 @@ export const AppLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const screens = useBreakpoint();
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
+
+  // If user is not authenticated and not present in store, redirect to /login
+  if (!isAuthenticated && !user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
 
   const activeRole = user?.activeRole || 'REQUESTER';
   const menuItems = getNavigationMenuItemsForRole(activeRole);
@@ -24,7 +28,6 @@ export const AppLayout: React.FC = () => {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <DemoPersonaBar />
       <Header
         style={{
           display: 'flex',
