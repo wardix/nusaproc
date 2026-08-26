@@ -41,10 +41,11 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const email = form.getFieldValue('email')?.trim() || 'user@nusanet.net.id';
+      const email = form.getFieldValue('email')?.trim() || 'budi.santoso@nusanet.net.id';
+      const name = email === 'budi.santoso@nusanet.net.id' ? 'Budi Santoso' : email.split('@')[0].replace(/\./g, ' ').toUpperCase();
       const mockPayload = JSON.stringify({
         email,
-        name: email.split('@')[0].replace(/\./g, ' ').toUpperCase(),
+        name,
         hd: 'nusanet.net.id',
         sub: `google-${Date.now()}`,
       });
