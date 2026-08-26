@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Card, Form, Input, Button, Typography, Divider, Alert, Space, Select, Tag } from 'antd';
+import { Card, Form, Input, Button, Typography, Divider, Alert, Select } from 'antd';
 import { UserOutlined, LockOutlined, GoogleOutlined, SafetyCertificateOutlined, LoginOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { loginWithPassword, loginWithGoogle } from '../../../api/endpoints/auth';
-import { DEMO_PERSONAS, type AppRole } from '@nusaproc/shared';
+import type { AppRole } from '@nusaproc/shared';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ export const LoginPage: React.FC = () => {
     setErrorMessage(null);
     try {
       const result = await loginWithPassword({
-        email: values.email,
+        email: values.email.trim(),
         password: values.password,
         requestedRole: values.requestedRole,
       });
@@ -37,11 +37,11 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleGoogleSsoLogin = async (customEmail?: string) => {
+  const handleGoogleSsoLogin = async () => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const email = customEmail || 'budi.santoso@nusanet.net.id';
+      const email = form.getFieldValue('email')?.trim() || 'user@nusanet.net.id';
       const mockPayload = JSON.stringify({
         email,
         name: email.split('@')[0].replace(/\./g, ' ').toUpperCase(),
@@ -62,14 +62,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handlePersonaQuickSelect = (persona: typeof DEMO_PERSONAS[0]) => {
-    form.setFieldsValue({
-      email: persona.email,
-      password: 'Password123!',
-      requestedRole: persona.role,
-    });
-  };
-
   return (
     <div
       style={{
@@ -84,14 +76,14 @@ export const LoginPage: React.FC = () => {
       <Card
         style={{
           width: '100%',
-          maxWidth: 460,
+          maxWidth: 440,
           borderRadius: 12,
           boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
           border: 'none',
         }}
         bodyStyle={{ padding: '36px 32px' }}
       >
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div
             style={{
               display: 'inline-flex',
@@ -133,10 +125,6 @@ export const LoginPage: React.FC = () => {
           form={form}
           layout="vertical"
           onFinish={handlePasswordLogin}
-          initialValues={{
-            email: 'budi.santoso@nusanet.net.id',
-            password: 'Password123!',
-          }}
         >
           <Form.Item
             name="email"
@@ -150,6 +138,7 @@ export const LoginPage: React.FC = () => {
               prefix={<UserOutlined style={{ color: '#8c8c8c' }} />}
               placeholder="nama@nusanet.net.id"
               size="large"
+              autoComplete="email"
             />
           </Form.Item>
 
@@ -162,6 +151,7 @@ export const LoginPage: React.FC = () => {
               prefix={<LockOutlined style={{ color: '#8c8c8c' }} />}
               placeholder="Masukkan kata sandi..."
               size="large"
+              autoComplete="current-password"
             />
           </Form.Item>
 
@@ -206,43 +196,16 @@ export const LoginPage: React.FC = () => {
           size="large"
           block
           icon={<GoogleOutlined style={{ color: '#EA4335' }} />}
-          onClick={() => handleGoogleSsoLogin(form.getFieldValue('email'))}
+          onClick={handleGoogleSsoLogin}
           loading={loading}
           style={{
             borderColor: '#d9d9d9',
             fontWeight: 500,
             height: 44,
-            marginBottom: 24,
           }}
         >
           Masuk dengan Google Workspace
         </Button>
-
-        {/* Demo Fast Persona Selector */}
-        <Card
-          size="small"
-          style={{
-            background: '#FAFAFA',
-            borderColor: '#F0F0F0',
-            borderRadius: 8,
-          }}
-        >
-          <Paragraph style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#595959' }}>
-            ⚡ Akses Cepat Demo Persona:
-          </Paragraph>
-          <Space wrap size={[4, 6]} style={{ marginTop: 8 }}>
-            {DEMO_PERSONAS.map((p) => (
-              <Tag
-                key={p.id}
-                color={p.role === 'ADMIN' ? 'purple' : p.role === 'FINANCE' ? 'gold' : 'blue'}
-                style={{ cursor: 'pointer', padding: '2px 8px', fontSize: 11 }}
-                onClick={() => handlePersonaQuickSelect(p)}
-              >
-                {p.fullName.split(' ')[0]} ({p.role})
-              </Tag>
-            ))}
-          </Space>
-        </Card>
       </Card>
     </div>
   );
