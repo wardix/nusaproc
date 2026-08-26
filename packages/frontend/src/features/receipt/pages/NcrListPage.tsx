@@ -1,0 +1,196 @@
+import React, { useState } from 'react';
+import { Table, Tag, Card, Typography, Row, Col, Input, Select, Space, Badge } from 'antd';
+import { WarningOutlined, CheckCircleOutlined, AlertOutlined, SearchOutlined, AuditOutlined } from '@ant-design/icons';
+import { useQuery } from '@tanstack/react-query';
+import { receiptApi } from '../../../api/endpoints/receipt';
+
+const { Title, Text, Paragraph } = Typography;
+
+export interface NcrItem {
+  id: string;
+  ncrNumber: string;
+  grId: string;
+  poId: string;
+  description: string;
+  actionRequired: string;
+  isResolved: boolean;
+  resolvedBy?: string | null;
+  resolvedAt?: string | null;
+  createdAt: string;
+}
+
+export const NcrListPage: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['ncrs', statusFilter],
+    queryFn: () => receiptApi.listNcrs({ isResolved: statusFilter }),
+  });
+
+  const rawNcrs: NcrItem[] = data?.data || [];
+
+  const filteredNcrs = rawNcrs.filter((ncr) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      ncr.ncrNumber.toLowerCase().includes(term) ||
+      ncr.poId.toLowerCase().includes(term) ||
+      ncr.description.toLowerCase().includes(term) ||
+      ncr.actionRequired.toLowerCase().includes(term)
+    );
+  });
+
+  const columns = [
+    {
+      title: 'Nomor Tiket NCR',
+      dataIndex: 'ncrNumber',
+      key: 'ncrNumber',
+      render: (ncrNumber: string) => (
+        <Space>
+          <WarningOutlined style={{ color: '#FA541C', fontSize: 16 }} />
+          <Text strong style={{ color: '#D4380D' }}>
+            {ncrNumber}
+          </Text>
+        </Space>
+      ),
+    },
+    {
+      title: 'Dokumen Terkait',
+      key: 'relatedDocs',
+      render: (_: unknown, record: NcrItem) => (
+        <Space direction="vertical" size={2}>
+          <div>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              PO ID:
+            </Text>{' '}
+            <Tag color="blue">{record.poId.slice(0, 8)}...</Tag>
+          </div>
+          <div>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              BAST ID:
+            </Text>{' '}
+            <Tag color="cyan">{record.grId.slice(0, 8)}...</Tag>
+          </div>
+        </Space>
+      ),
+    },
+    {
+      title: 'Deskripsi Masalah & Ketidaksesuaian',
+      dataIndex: 'description',
+      key: 'description',
+      ellipsis: true,
+      render: (desc: string) => (
+        <Paragraph style={{ margin: 0 }} ellipsis={{ rows: 2, tooltip: desc }}>
+          {desc}
+        </Paragraph>
+      ),
+    },
+    {
+      title: 'Tindakan yang Diperlukan',
+      dataIndex: 'actionRequired',
+      key: 'actionRequired',
+      ellipsis: true,
+      render: (action: string) => (
+        <Text style={{ color: '#595959', fontSize: 13 }}>
+          {action}
+        </Text>
+      ),
+    },
+    {
+      title: 'Status Tiket',
+      dataIndex: 'isResolved',
+      key: 'isResolved',
+      render: (resolved: boolean) =>
+        resolved ? (
+          <Tag color="success" icon={<CheckCircleOutlined />}>
+            SELESAI / RESOLVED
+          </Tag>
+        ) : (
+          <Tag color="error" icon={<AlertOutlined />}>
+            OPEN / INVESTIGASI
+          </Tag>
+        ),
+    },
+    {
+      title: 'Tanggal Pencatatan',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (dateStr: string) => (
+        <Text style={{ fontSize: 12 }}>
+          {dateStr ? new Date(dateStr).toLocaleString('id-ID') : '-'}
+        </Text>
+      ),
+    },
+  ];
+
+  return (
+    <div style={{ padding: '0px' }}>
+      <Card style={{ marginBottom: 24 }}>
+        <Row justify="space-between" align="middle">
+          <Col>
+            <Space align="center" size="middle">
+              <AuditOutlined style={{ fontSize: 28, color: '#FA541C' }} />
+              <div>
+                <Title level={4} style={{ margin: 0 }}>
+                  Laporan Ketidaksesuaian Barang / Non-Conformance Reports (NCR) (R30, US5)
+                </Title>
+                <Text type="secondary">
+                  Daftar insiden barang rusak, ditolak, atau tidak sesuai spesifikasi yang dicatat saat penerimaan BAST oleh Gudang / Pemohon.
+                </Text>
+              </div>
+            </Space>
+          </Col>
+          <Col>
+            <Badge
+              count={rawNcrs.filter((n) => !n.isResolved).length}
+              overflowCount={99}
+            >
+              <Tag color="volcano" style={{ padding: '4px 12px', fontSize: 13 }}>
+                Tiket Open: {rawNcrs.filter((n) => !n.isResolved).length}
+              </Tag>
+            </Badge>
+          </Col>
+        </Row>
+      </Card>
+
+      <Card style={{ marginBottom: 24 }}>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={8}>
+            <Input
+              placeholder="Cari nomor NCR, PO ID, deskripsi..."
+              prefix={<SearchOutlined />}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              allowClear
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Select
+              placeholder="Status Resolusi"
+              style={{ width: '100%' }}
+              allowClear
+              value={statusFilter}
+              onChange={setStatusFilter}
+            >
+              <Select.Option value={false}>Open / Dalam Investigasi</Select.Option>
+              <Select.Option value={true}>Selesai / Resolved</Select.Option>
+            </Select>
+          </Col>
+        </Row>
+      </Card>
+
+      <Card>
+        <Table
+          columns={columns}
+          dataSource={filteredNcrs}
+          rowKey="id"
+          loading={isLoading}
+          pagination={{ pageSize: 10, showTotal: (total) => `Total ${total} laporan NCR` }}
+        />
+      </Card>
+    </div>
+  );
+};
+
+export default NcrListPage;

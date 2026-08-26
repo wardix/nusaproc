@@ -1,5 +1,4 @@
-import React from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { ActionDashboard } from './features/dashboard/ActionDashboard';
 import { PrListPage } from './features/pr/pages/PrListPage';
@@ -8,12 +7,13 @@ import { PoListPage } from './features/po/pages/PoListPage';
 import { InvoiceListPage } from './features/invoice/pages/InvoiceListPage';
 import { ReceiptListPage } from './features/receipt/pages/ReceiptListPage';
 import { BastCreateForm } from './features/receipt/components/BastCreateForm';
+import { NcrListPage } from './features/receipt/pages/NcrListPage';
 import { PaymentListPage } from './features/payment/pages/PaymentListPage';
 import { AuditLogPage } from './features/audit/pages/AuditLogPage';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { AdminUsersPage } from './features/admin/pages/AdminUsersPage';
 
-export const router: ReturnType<typeof createBrowserRouter> = createBrowserRouter([
+export const routes: RouteObject[] = [
   {
     path: '/login',
     element: <LoginPage />,
@@ -60,7 +60,7 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
       },
       {
         path: 'ncr',
-        element: <ReceiptListPage />,
+        element: <NcrListPage />,
       },
       {
         path: 'payments',
@@ -76,4 +76,9 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
       },
     ],
   },
-]);
+];
+
+export const router: ReturnType<typeof createBrowserRouter> =
+  typeof document !== 'undefined'
+    ? createBrowserRouter(routes)
+    : (null as unknown as ReturnType<typeof createBrowserRouter>);
