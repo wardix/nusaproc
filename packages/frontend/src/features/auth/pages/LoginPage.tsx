@@ -1,10 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Form, Input, Button, Typography, Divider, Alert, Select } from 'antd';
 import { UserOutlined, LockOutlined, GoogleOutlined, SafetyCertificateOutlined, LoginOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { loginWithPassword, loginWithGoogle } from '../../../api/endpoints/auth';
 import type { AppRole } from '@nusaproc/shared';
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential: string }) => void;
+            auto_select?: boolean;
+            cancel_on_tap_outside?: boolean;
+          }) => void;
+          renderButton: (
+            parent: HTMLElement,
+            options: {
+              theme?: 'outline' | 'filled_blue' | 'filled_black';
+              size?: 'large' | 'medium' | 'small';
+              type?: 'standard' | 'icon';
+              text?: 'signin_with' | 'signup_with' | 'continue_with';
+              shape?: 'rectangular' | 'pill' | 'circle' | 'square';
+              logo_alignment?: 'left' | 'center';
+              width?: number | string;
+            }
+          ) => void;
+          prompt: () => void;
+        };
+      };
+    };
+  }
+}
 
 const { Title, Text } = Typography;
 
@@ -13,7 +43,59 @@ export const LoginPage: React.FC = () => {
   const { setUser, setToken } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [gisReady, setGisReady] = useState(false);
   const [form] = Form.useForm();
+
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+  // Initialize real Google Identity Services SDK
+  useEffect(() => {
+    if (!googleClientId) return;
+
+    const interval = setInterval(() => {
+      if (window.google?.accounts?.id) {
+        clearInterval(interval);
+        setGisReady(true);
+
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response: { credential: string }) => {
+            setLoading(true);
+            setErrorMessage(null);
+            try {
+              const result = await loginWithGoogle({ credential: response.credential });
+              setToken(result.token);
+              setUser(result.user);
+              navigate('/dashboard');
+            } catch (err: unknown) {
+              const errorObj = err as { response?: { data?: { detail?: string } }; message?: string };
+              const msg = errorObj.response?.data?.detail || errorObj.message || 'Gagal autentikasi via Google Workspace.';
+              setErrorMessage(msg);
+            } finally {
+              setLoading(false);
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        const btnDiv = document.getElementById('google-sso-btn');
+        if (btnDiv) {
+          window.google.accounts.id.renderButton(btnDiv, {
+            theme: 'outline',
+            size: 'large',
+            type: 'standard',
+            text: 'signin_with',
+            shape: 'rectangular',
+            logo_alignment: 'left',
+            width: 376,
+          });
+        }
+      }
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [googleClientId, navigate, setToken, setUser]);
 
   const handlePasswordLogin = async (values: { email: string; password: string; requestedRole?: AppRole }) => {
     setLoading(true);
@@ -37,7 +119,12 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleGoogleSsoLogin = async () => {
+  const handleGoogleSsoFallback = async () => {
+    if (window.google?.accounts?.id && googleClientId) {
+      window.google.accounts.id.prompt();
+      return;
+    }
+
     setLoading(true);
     setErrorMessage(null);
     try {
@@ -193,20 +280,50 @@ export const LoginPage: React.FC = () => {
         </Divider>
 
         {/* Google Workspace SSO Button */}
-        <Button
-          size="large"
-          block
-          icon={<GoogleOutlined style={{ color: '#EA4335' }} />}
-          onClick={handleGoogleSsoLogin}
-          loading={loading}
-          style={{
-            borderColor: '#d9d9d9',
-            fontWeight: 500,
-            height: 44,
-          }}
-        >
-          Masuk dengan Google Workspace
-        </Button>
+        {googleClientId ? (
+          <div>
+            <div
+              id="google-sso-btn"
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                minHeight: 44,
+                marginBottom: gisReady ? 0 : 8,
+              }}
+            />
+            {!gisReady && (
+              <Button
+                size="large"
+                block
+                icon={<GoogleOutlined style={{ color: '#EA4335' }} />}
+                onClick={handleGoogleSsoFallback}
+                loading={loading}
+                style={{
+                  borderColor: '#d9d9d9',
+                  fontWeight: 500,
+                  height: 44,
+                }}
+              >
+                Masuk dengan Google Workspace
+              </Button>
+            )}
+          </div>
+        ) : (
+          <Button
+            size="large"
+            block
+            icon={<GoogleOutlined style={{ color: '#EA4335' }} />}
+            onClick={handleGoogleSsoFallback}
+            loading={loading}
+            style={{
+              borderColor: '#d9d9d9',
+              fontWeight: 500,
+              height: 44,
+            }}
+          >
+            Masuk dengan Google Workspace
+          </Button>
+        )}
       </Card>
     </div>
   );

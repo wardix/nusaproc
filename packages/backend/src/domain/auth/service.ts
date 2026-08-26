@@ -13,13 +13,33 @@ import type {
   UserRoleRecord,
 } from './types';
 
-function parseGoogleJwtPayload(token: string): { email: string; name?: string; hd?: string; sub?: string } {
+async function parseGoogleJwtPayload(token: string): Promise<{ email: string; name?: string; hd?: string; sub?: string }> {
   try {
     if (token.startsWith('{') && token.endsWith('}')) {
       return JSON.parse(token);
     }
     const parts = token.split('.');
     if (parts.length === 3) {
+      // If network is available and looks like a real Google JWT, optionally verify with Google
+      try {
+        const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`, {
+          signal: AbortSignal.timeout(3000),
+        });
+        if (response.ok) {
+          const data = (await response.json()) as { email?: string; name?: string; hd?: string; sub?: string };
+          if (data.email) {
+            return {
+              email: data.email,
+              name: data.name,
+              hd: data.hd,
+              sub: data.sub,
+            };
+          }
+        }
+      } catch {
+        // Fallback to offline parsing if offline or in unit test
+      }
+
       let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
       while (base64.length % 4) base64 += '=';
       const jsonStr = Buffer.from(base64, 'base64').toString('utf-8');
@@ -114,7 +134,7 @@ export async function loginWithLocalPassword(input: LoginInput): Promise<AuthSuc
 
 export async function loginWithGoogleSso(input: GoogleAuthInput): Promise<AuthSuccessResult> {
   const tokenString = input.credential || input.idToken!;
-  const payload = parseGoogleJwtPayload(tokenString);
+  const payload = await parseGoogleJwtPayload(tokenString);
 
   const email = payload.email?.toLowerCase();
   if (!email) {
