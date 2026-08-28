@@ -33,9 +33,11 @@ import {
   createUser,
   updateUserRoles,
   updateUserStatus,
+  branchesApi,
+  divisionsApi,
   type UserItem,
   type CreateUserPayload,
-} from '../../../api/endpoints/user';
+} from '../../../api';
 import type { AppRole } from '@nusaproc/shared';
 
 const { Title, Text } = Typography;
@@ -77,6 +79,19 @@ export const AdminUsersPage: React.FC = () => {
         isActive: statusFilter,
       }),
   });
+
+  const { data: branchesData } = useQuery({
+    queryKey: ['branches', true],
+    queryFn: () => branchesApi.list({ isActive: true }),
+  });
+
+  const { data: divisionsData } = useQuery({
+    queryKey: ['divisions', true],
+    queryFn: () => divisionsApi.list({ isActive: true }),
+  });
+
+  const activeBranches = branchesData?.data || [];
+  const activeDivisions = divisionsData?.data || [];
 
   // Mutations
   const createMutation = useMutation({
@@ -356,11 +371,11 @@ export const AdminUsersPage: React.FC = () => {
               value={divisionFilter}
               onChange={setDivisionFilter}
             >
-              <Select.Option value="DIV-IT">DIV-IT (Teknologi Informasi)</Select.Option>
-              <Select.Option value="DIV-OPS">DIV-OPS (Operasional & NOC)</Select.Option>
-              <Select.Option value="DIV-FIN">DIV-FIN (Keuangan & Pajak)</Select.Option>
-              <Select.Option value="DIV-LOG">DIV-LOG (Logistik & Gudang)</Select.Option>
-              <Select.Option value="DIV-GEN">DIV-GEN (Umum & Pengadaan)</Select.Option>
+              {activeDivisions.map((d) => (
+                <Select.Option key={d.code} value={d.code}>
+                  {d.code} ({d.name})
+                </Select.Option>
+              ))}
             </Select>
           </Col>
           <Col xs={24} sm={12} md={6}>
@@ -463,11 +478,11 @@ export const AdminUsersPage: React.FC = () => {
                 rules={[{ required: true, message: 'Divisi wajib dipilih' }]}
               >
                 <Select placeholder="Pilih Divisi">
-                  <Select.Option value="DIV-IT">DIV-IT (IT & Systems)</Select.Option>
-                  <Select.Option value="DIV-OPS">DIV-OPS (Network & Ops)</Select.Option>
-                  <Select.Option value="DIV-FIN">DIV-FIN (Finance & Accounting)</Select.Option>
-                  <Select.Option value="DIV-LOG">DIV-LOG (Logistik & Gudang)</Select.Option>
-                  <Select.Option value="DIV-GEN">DIV-GEN (General Admin)</Select.Option>
+                  {activeDivisions.map((d) => (
+                    <Select.Option key={d.code} value={d.code}>
+                      {d.code} ({d.name})
+                    </Select.Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>
@@ -478,10 +493,11 @@ export const AdminUsersPage: React.FC = () => {
                 rules={[{ required: true, message: 'Cabang wajib dipilih' }]}
               >
                 <Select placeholder="Pilih Cabang">
-                  <Select.Option value="HQ_MEDAN">Kantor Pusat Medan</Select.Option>
-                  <Select.Option value="BRANCH-JKT-01">Cabang Jakarta</Select.Option>
-                  <Select.Option value="BRANCH-SBY-01">Cabang Surabaya</Select.Option>
-                  <Select.Option value="BRANCH-BDG-01">Cabang Bandung</Select.Option>
+                  {activeBranches.map((b) => (
+                    <Select.Option key={b.code} value={b.code}>
+                      {b.code} ({b.name})
+                    </Select.Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>

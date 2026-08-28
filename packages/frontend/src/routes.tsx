@@ -12,6 +12,7 @@ import { PaymentListPage } from './features/payment/pages/PaymentListPage';
 import { AuditLogPage } from './features/audit/pages/AuditLogPage';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { AdminUsersPage } from './features/admin/pages/AdminUsersPage';
+import { AdminOrganizationPage } from './features/admin/pages/AdminOrganizationPage';
 
 export const routes: RouteObject[] = [
   {
@@ -73,6 +74,10 @@ export const routes: RouteObject[] = [
       {
         path: 'admin/users',
         element: <AdminUsersPage />,
+      },
+      {
+        path: 'admin/organization',
+        element: <AdminOrganizationPage />,
       },
     ],
   },
