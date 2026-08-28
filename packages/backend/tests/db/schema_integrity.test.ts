@@ -372,4 +372,49 @@ describe('Database Schema Integrity & DDL Constraints', () => {
       expect(errorCaught).toBe(true);
     });
   });
+
+  describe('7. Master Organization Data Schema & Indices', () => {
+    it('verifies master_branch and master_division tables and initial seeded records exist', async () => {
+      const branches = await sql`SELECT code, name, city, is_active FROM master_branch ORDER BY code`;
+      expect(branches.length).toBeGreaterThanOrEqual(4);
+      const branchCodes = branches.map((b: { code: string }) => b.code);
+      expect(branchCodes).toContain('HQ_MEDAN');
+      expect(branchCodes).toContain('BRANCH-JKT-01');
+      expect(branchCodes).toContain('BRANCH-SBY-01');
+      expect(branchCodes).toContain('BRANCH-BDG-01');
+
+      const divisions = await sql`SELECT code, name, is_active FROM master_division ORDER BY code`;
+      expect(divisions.length).toBeGreaterThanOrEqual(5);
+      const divCodes = divisions.map((d: { code: string }) => d.code);
+      expect(divCodes).toContain('DIV-IT');
+      expect(divCodes).toContain('DIV-OPS');
+      expect(divCodes).toContain('DIV-FIN');
+      expect(divCodes).toContain('DIV-LOG');
+      expect(divCodes).toContain('DIV-GEN');
+    });
+
+    it('rejects duplicate branch code or division code with unique constraint violation', async () => {
+      let branchError = false;
+      try {
+        await sql`
+          INSERT INTO master_branch (code, name, city)
+          VALUES ('HQ_MEDAN', 'Duplicate HQ', 'Medan')
+        `;
+      } catch {
+        branchError = true;
+      }
+      expect(branchError).toBe(true);
+
+      let divError = false;
+      try {
+        await sql`
+          INSERT INTO master_division (code, name)
+          VALUES ('DIV-IT', 'Duplicate IT')
+        `;
+      } catch {
+        divError = true;
+      }
+      expect(divError).toBe(true);
+    });
+  });
 });
