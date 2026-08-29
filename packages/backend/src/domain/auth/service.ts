@@ -183,6 +183,11 @@ export async function loginWithGoogleSso(input: GoogleAuthInput): Promise<AuthSu
     const fullName = payload.name || email.split('@')[0].replace(/\./g, ' ').toUpperCase();
 
     user = await withTransaction(async (tx) => {
+      // Check if this is the very first user in the system (e.g. after fresh db:clean)
+      const countRes = await tx`SELECT count(*)::int AS count FROM app_user`;
+      const isFirstUser = (countRes[0]?.count || 0) === 0;
+      const initialRole: AppRole = isFirstUser ? 'ADMIN' : 'REQUESTER';
+
       const [created] = await tx`
         INSERT INTO app_user (
           id, email, full_name, employee_id, division_id, branch_id,
@@ -201,7 +206,7 @@ export async function loginWithGoogleSso(input: GoogleAuthInput): Promise<AuthSu
         INSERT INTO user_role_assignment (
           user_id, role, assigned_by, valid_from
         ) VALUES (
-          ${newUserId}, 'REQUESTER', ${newUserId}, CURRENT_DATE
+          ${newUserId}, ${initialRole}, ${newUserId}, CURRENT_DATE
         )
       `;
 
