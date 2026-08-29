@@ -14,6 +14,8 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "bun packages/backend/src/db/migrate.ts",
     "db:seed": "bun packages/backend/src/db/seed.ts",
+    "db:clean": "bun packages/backend/src/db/clean.ts",
+    "db:reset": "bun packages/backend/src/db/clean.ts && bun packages/backend/src/db/seed.ts",
     "dev:backend": "bun --filter @nusaproc/backend dev",
     "dev:frontend": "bun --filter @nusaproc/frontend dev",
     "dev": "concurrently -n 'backend,frontend' -c 'blue,green' 'bun run dev:backend' 'bun run dev:frontend'"
