@@ -101,18 +101,35 @@ export function createAuthApp(): Hono {
   // POST /auth/switch-role (US14)
   app.post('/auth/switch-role', async (c) => {
     try {
-      const userId = c.req.header('X-User-Id') || '10000000-0000-0000-0000-000000000001';
+      let authUser = c.get('authUser');
+      if (!authUser) {
+        const authHeader = c.req.header('Authorization');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          try {
+            authUser = await verifyAuthToken(authHeader.substring(7).trim());
+          } catch {}
+        }
+      }
+      const userId = authUser?.userId || c.req.header('X-User-Id');
+      if (!userId) {
+        throw new UnauthorizedError('Sesi autentikasi diperlukan untuk beralih peran');
+      }
+
       const body = await c.req.json().catch(() => ({}));
       const validated = switchRoleSchema.parse(body);
 
-      const persona = DEMO_PERSONAS.find((p) => p.id === userId) || DEMO_PERSONAS[0];
+      const user = await getUserById(userId);
+      const hasRole = user.roles.some((r) => r.role === validated.role);
+      if (!hasRole) {
+        throw new ForbiddenError(`Pengguna tidak memiliki peran ${validated.role}`);
+      }
 
       const token = await generateAuthToken({
-        userId,
-        email: persona.email,
+        userId: user.id,
+        email: user.email,
         activeRole: validated.role as AppRole,
-        divisionId: persona.divisionId,
-        branchId: persona.branchId,
+        divisionId: user.divisionId,
+        branchId: user.branchId,
       });
 
       return c.json({
@@ -123,7 +140,8 @@ export function createAuthApp(): Hono {
         },
       });
     } catch (err) {
-      return c.json(formatProblemDetails(err, c.req.path), 400);
+      const status = err instanceof AppError ? (err.statusCode as 400 | 401 | 403 | 404 | 409 | 500) : 400;
+      return c.json(formatProblemDetails(err, c.req.path), status);
     }
   });
 

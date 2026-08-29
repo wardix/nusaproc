@@ -98,10 +98,7 @@ export async function loginWithLocalPassword(input: LoginInput): Promise<AuthSuc
   }
 
   const roles: AppRole[] = roleRows.map((r: { role: AppRole }) => r.role);
-  const activeRole: AppRole =
-    input.requestedRole && roles.includes(input.requestedRole)
-      ? input.requestedRole
-      : roles[0];
+  const activeRole: AppRole = pickDefaultActiveRole(roles, input.requestedRole);
 
   // Update last_login_at
   await sql`
@@ -234,10 +231,7 @@ export async function loginWithGoogleSso(input: GoogleAuthInput): Promise<AuthSu
       ? roleRows.map((r: { role: AppRole }) => r.role)
       : ['REQUESTER'];
 
-  const activeRole: AppRole =
-    input.requestedRole && roles.includes(input.requestedRole)
-      ? input.requestedRole
-      : roles[0];
+  const activeRole: AppRole = pickDefaultActiveRole(roles, input.requestedRole);
 
   await sql`
     UPDATE app_user
@@ -526,4 +520,24 @@ export async function updateUserStatus(
   }
 
   return { success: true, isActive };
+}
+
+const ROLE_PRIORITY: AppRole[] = [
+  'ADMIN',
+  'FINANCE',
+  'ACCOUNT_PAYABLE',
+  'WAREHOUSE',
+  'APPROVER',
+  'AUDITOR',
+  'REQUESTER',
+];
+
+export function pickDefaultActiveRole(roles: AppRole[], requestedRole?: AppRole): AppRole {
+  if (requestedRole && roles.includes(requestedRole)) {
+    return requestedRole;
+  }
+  for (const role of ROLE_PRIORITY) {
+    if (roles.includes(role)) return role;
+  }
+  return roles[0] || 'REQUESTER';
 }

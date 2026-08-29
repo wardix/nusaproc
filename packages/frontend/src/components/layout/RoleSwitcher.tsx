@@ -3,6 +3,7 @@ import { Dropdown, Space, Avatar, Tag, Typography, type MenuProps } from 'antd';
 import { UserOutlined, DownOutlined, CheckOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { switchRole } from '../../api/endpoints/auth';
 import type { AppRole } from '@nusaproc/shared';
 
 const { Text } = Typography;
@@ -29,7 +30,7 @@ const ROLE_COLORS: Record<AppRole, string> = {
 
 export const RoleSwitcher: React.FC = () => {
   const navigate = useNavigate();
-  const { user, setActiveRole, logout } = useAuthStore();
+  const { user, setActiveRole, setToken, logout } = useAuthStore();
 
   const userRoles = user?.roles || ['REQUESTER'];
   const activeRole = user?.activeRole || 'REQUESTER';
@@ -37,6 +38,18 @@ export const RoleSwitcher: React.FC = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleRoleSelect = async (role: AppRole) => {
+    setActiveRole(role);
+    try {
+      const res = await switchRole(role);
+      if (res.token) {
+        setToken(res.token);
+      }
+    } catch (err) {
+      console.warn('Failed to switch role token on server:', err);
+    }
   };
 
   const roleMenuItems: MenuProps['items'] = userRoles.map((role) => ({
@@ -50,7 +63,7 @@ export const RoleSwitcher: React.FC = () => {
         {role === activeRole && <CheckOutlined style={{ color: '#0052CC' }} />}
       </Space>
     ),
-    onClick: () => setActiveRole(role),
+    onClick: () => handleRoleSelect(role),
   }));
 
   const menuItems: MenuProps['items'] = [
