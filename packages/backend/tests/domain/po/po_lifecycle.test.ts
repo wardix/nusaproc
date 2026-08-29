@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { sql } from '../../../src/db/client';
 import { runMigrations } from '../../../src/db/migrate';
+import { cleanupTestUsers } from '../../helpers/test_cleaner';
 import {
   createVendor,
   createVendorBankAccount,
@@ -573,5 +574,9 @@ describe('Epic 5: PO & Vendor 4-Eyes Bank Account Verification & PO Generation (
       });
       expect(poRes.status).toBe(201);
     });
+  });
+
+  afterAll(async () => {
+    await cleanupTestUsers([apMakerId, apCheckerId, poApproverId, requesterId]);
   });
 });

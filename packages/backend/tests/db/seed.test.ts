@@ -1,9 +1,14 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, afterAll } from 'bun:test';
 import { sql } from '../../src/db/client';
 import { runSeed } from '../../src/db/seed';
 import { DEMO_PERSONAS } from '@nusaproc/shared';
+import { cleanupDemoSeedData } from '../helpers/test_cleaner';
 
 describe('Epic 14: Realistic PT Nusanet Demo Seeder & Fast Role Switcher', () => {
+  afterAll(async () => {
+    await cleanupDemoSeedData();
+  });
+
   it('executes database seed idempotently and populates all 7 personas and transactions', async () => {
     // 1. Run seeder
     const result = await runSeed();

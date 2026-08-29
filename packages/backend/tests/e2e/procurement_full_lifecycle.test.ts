@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { sql } from '../../src/db/client';
 import { runMigrations } from '../../src/db/migrate';
 import { createApp } from '../../src/index';
 import { generateReauthToken } from '../../src/domain/auth/token';
+import { cleanupTestUsers } from '../helpers/test_cleaner';
 
 describe('Epic 13: [E2E] Full Lifecycle Simulation Test Suite (PR -> PO -> BAST -> Matcher -> Payment -> Audit)', () => {
   const app = createApp();
@@ -558,6 +559,53 @@ describe('Epic 13: [E2E] Full Lifecycle Simulation Test Suite (PR -> PO -> BAST 
     expect(bundleRes.headers.get('Content-Type')).toBe('application/zip');
     const zipArrayBuffer = await bundleRes.arrayBuffer();
     expect(zipArrayBuffer.byteLength).toBeGreaterThan(100);
+  });
+
+  afterAll(async () => {
+    // Clean up all transactions created in this test
+    if (paymentProposalId) {
+      await sql`DELETE FROM payment_invoice_allocation WHERE payment_proposal_id = ${paymentProposalId}`;
+      await sql`DELETE FROM payment_proposal WHERE id = ${paymentProposalId}`;
+    }
+    if (poId) {
+      await sql`DELETE FROM payment_invoice_allocation WHERE invoice_id IN (SELECT id FROM invoice WHERE po_id = ${poId})`;
+      await sql`DELETE FROM invoice_matching_exception WHERE invoice_id IN (SELECT id FROM invoice WHERE po_id = ${poId})`;
+      await sql`DELETE FROM invoice WHERE po_id = ${poId}`;
+    }
+    if (grId) {
+      await sql`DELETE FROM non_conformance_report WHERE gr_id = ${grId}`;
+      await sql`DELETE FROM goods_receipt_item WHERE gr_id = ${grId}`;
+      await sql`DELETE FROM goods_receipt WHERE id = ${grId}`;
+    }
+    if (poId) {
+      await sql`DELETE FROM po_amendment_history WHERE po_id = ${poId}`;
+      await sql`DELETE FROM purchase_order_item WHERE po_id = ${poId}`;
+      await sql`DELETE FROM purchase_order WHERE id = ${poId}`;
+    }
+    if (prId) {
+      await sql`DELETE FROM emergency_post_review WHERE pr_id = ${prId}`;
+      await sql`DELETE FROM approval_instance WHERE pr_id = ${prId}`;
+      await sql`DELETE FROM purchase_request_item WHERE pr_id = ${prId}`;
+      await sql`DELETE FROM purchase_request WHERE id = ${prId}`;
+    }
+    if (bankAccountId) {
+      await sql`DELETE FROM vendor_bank_account WHERE id = ${bankAccountId}`;
+    }
+    if (vendorId) {
+      await sql`DELETE FROM vendor WHERE id = ${vendorId}`;
+    }
+
+    // Clean up the 8 test actors
+    await cleanupTestUsers([
+      requesterId,
+      approverId,
+      apMakerId,
+      apCheckerId,
+      headOfApId,
+      warehouseId,
+      financeExecutorId,
+      auditorId,
+    ]);
   });
 });
 

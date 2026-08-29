@@ -1,14 +1,37 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { app } from '../../../src/index';
-import { runSeed } from '../../../src/db/seed';
 import { sql } from '../../../src/db/client';
+import { cleanupTestUsers } from '../../helpers/test_cleaner';
 
 describe('Epic 19: [Admin] User Provisioning, Role Assignment & Status Management (US12, R1, R2, R3, R64)', () => {
-  const adminId = '00000000-0000-0000-0000-000000000002';
-  const requesterId = '10000000-0000-0000-0000-000000000001';
+  const adminId = crypto.randomUUID();
+  const requesterId = crypto.randomUUID();
+  const createdUserIds: string[] = [adminId, requesterId];
 
   beforeAll(async () => {
-    await runSeed();
+    await sql`
+      INSERT INTO app_user (id, email, full_name, employee_id, division_id, branch_id, is_active)
+      VALUES 
+        (${adminId}, ${`admin-test-${adminId.slice(0, 6)}@test.local`}, 'Admin Test', ${`EMP-ADM-${adminId.slice(0, 6)}`}, 'DIV-IT', 'HQ_MEDAN', TRUE),
+        (${requesterId}, ${`req-test-${requesterId.slice(0, 6)}@test.local`}, 'Req Test', ${`EMP-REQ-${requesterId.slice(0, 6)}`}, 'DIV-IT', 'HQ_MEDAN', TRUE)
+      ON CONFLICT (id) DO NOTHING;
+    `;
+
+    await sql`
+      INSERT INTO user_role_assignment (user_id, role, assigned_by)
+      VALUES 
+        (${adminId}, 'ADMIN', ${adminId}),
+        (${requesterId}, 'REQUESTER', ${adminId})
+      ON CONFLICT (user_id, role) DO NOTHING;
+    `;
+  });
+
+  afterAll(async () => {
+    const extraUsers = await sql`
+      SELECT id FROM app_user WHERE email LIKE 'staff.%@nusanet.net.id' OR email LIKE 'user-deact-%' OR email LIKE 'other-user-%'
+    `;
+    const allIds = [...createdUserIds, ...extraUsers.map(u => u.id)];
+    await cleanupTestUsers(allIds);
   });
 
   describe('1. Layer 2 RBAC Guard on User Management Endpoints', () => {
@@ -60,7 +83,7 @@ describe('Epic 19: [Admin] User Provisioning, Role Assignment & Status Managemen
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(Array.isArray(json.data)).toBe(true);
-      expect(json.data.length).toBeGreaterThanOrEqual(7);
+      expect(json.data.length).toBeGreaterThanOrEqual(2);
     });
   });
 
@@ -119,8 +142,8 @@ describe('Epic 19: [Admin] User Provisioning, Role Assignment & Status Managemen
           'X-User-Role': 'ADMIN',
         },
         body: JSON.stringify({
-          email: 'budi.santoso@nusanet.net.id', // Duplicate email
-          fullName: 'Duplicate Budi',
+          email: `admin-test-${adminId.slice(0, 6)}@test.local`, // Duplicate email
+          fullName: 'Duplicate Admin',
           employeeId: 'EMP-UNIQUE-999',
           divisionId: 'DIV-IT',
           branchId: 'HQ_MEDAN',

@@ -458,7 +458,7 @@ CREATE TABLE IF NOT EXISTS idempotency_key_record (
 CREATE TABLE IF NOT EXISTS audit_trail_entry (
     id BIGSERIAL PRIMARY KEY,
     event_timestamp TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
-    actor_id UUID REFERENCES app_user(id),
+    actor_id UUID,
     actor_role app_role_enum,
     action_type VARCHAR(64) NOT NULL,
     entity_name VARCHAR(64) NOT NULL,

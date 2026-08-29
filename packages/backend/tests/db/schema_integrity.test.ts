@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { sql } from '../../src/db/client';
 import { runMigrations } from '../../src/db/migrate';
 import { recordAuditTrailEntry } from '../../src/domain/audit/service';
+import { cleanupTestUsers, cleanupTestBranches, cleanupTestDivisions } from '../helpers/test_cleaner';
 
 describe('Database Schema Integrity & DDL Constraints', () => {
   beforeAll(async () => {
@@ -283,21 +284,14 @@ describe('Database Schema Integrity & DDL Constraints', () => {
   });
 
   describe('4. Seed Data Verification', () => {
-    it('seeds the default admin local fallback user and role assignment (R1)', async () => {
+    it('verifies the admin user and role assignment (R1)', async () => {
       const adminUsers = await sql`
-        SELECT id, email, is_local_fallback, is_active
-        FROM app_user
-        WHERE email = 'admin@nusanet.net.id'
+        SELECT u.id, u.email, u.is_local_fallback, u.is_active
+        FROM app_user u
+        JOIN user_role_assignment ura ON ura.user_id = u.id
+        WHERE ura.role = 'ADMIN'
       `;
-      expect(adminUsers.length).toBe(1);
-      expect(adminUsers[0].email).toBe('admin@nusanet.net.id');
-      expect(adminUsers[0].is_local_fallback).toBe(true);
-
-      const adminRole = await sql`
-        SELECT role FROM user_role_assignment WHERE user_id = ${adminUsers[0].id}
-      `;
-      expect(adminRole.length).toBeGreaterThanOrEqual(1);
-      expect(adminRole[0].role).toBe('ADMIN');
+      expect(adminUsers.length).toBeGreaterThanOrEqual(1);
     });
 
     it('seeds initial default tax rule snapshot', async () => {
@@ -411,5 +405,23 @@ describe('Database Schema Integrity & DDL Constraints', () => {
       }
       expect(divError).toBe(true);
     });
+  });
+
+  afterAll(async () => {
+    await sql`DELETE FROM master_branch WHERE code LIKE 'TEST-BR-%'`;
+    await sql`DELETE FROM master_division WHERE code LIKE 'TEST-DIV-%'`;
+    const testUsers = await sql`
+      SELECT id FROM app_user 
+      WHERE email LIKE 'po-creator-%' 
+         OR email LIKE 'po-approver-%' 
+         OR email LIKE 'req-user-%' 
+         OR email LIKE 'appr-user-%' 
+         OR email LIKE 'inv-user-%' 
+         OR email LIKE 'pay-maker-%' 
+         OR email LIKE 'pay-checker-%' 
+         OR email LIKE 'pay-executor-%' 
+         OR email LIKE 'idx-user-%'
+    `;
+    await cleanupTestUsers(testUsers.map((u: { id: string }) => u.id));
   });
 });

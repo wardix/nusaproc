@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { sql } from '../../../src/db/client';
 import { runMigrations } from '../../../src/db/migrate';
+import { cleanupTestUsers, cleanupTestVendors } from '../../helpers/test_cleaner';
 import {
   computeWebhookSignature,
   verifyWebhookSignature,
@@ -399,5 +400,24 @@ describe('Epic 12: [Integrasi & Resilience] REST API, Webhook Dispatcher & Deleg
       expect(errorCaught).toBe(true);
       expect(errorMessage).toContain('BLACKLISTED');
     });
+  });
+
+  afterAll(async () => {
+    await sql`DELETE FROM webhook_subscription WHERE target_url LIKE '%example.com%' OR target_url LIKE '%test.local%'`;
+    await sql`DELETE FROM outbox_event WHERE event_type LIKE '%TEST%' OR event_type = 'PURCHASE_ORDER_ISSUED'`;
+    const testUsers = await sql`
+      SELECT id FROM app_user 
+      WHERE email LIKE 'u-%' 
+         OR email LIKE 'mgr-%' 
+         OR email LIKE 'stf-%' 
+         OR email LIKE 'req-%' 
+         OR email LIKE 'appr-%' 
+         OR email LIKE 'auth-%' 
+         OR email LIKE 'a-%' 
+         OR email LIKE 'ap-%'
+         OR email LIKE 'user-%'
+         OR email LIKE 'head-ap-%'
+    `;
+    await cleanupTestUsers(testUsers.map((u: { id: string }) => u.id));
   });
 });

@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { sql } from '../../../src/db/client';
 import { runMigrations } from '../../../src/db/migrate';
+import { cleanupTestUsers } from '../../helpers/test_cleaner';
 import { createVendor, createVendorBankAccount, verifyBankAccountStage } from '../../../src/domain/vendor/service';
 import { createPurchaseRequest, submitPurchaseRequest, decideApprovalStep } from '../../../src/domain/pr/service';
 import { createPurchaseOrder, approvePurchaseOrder, issuePurchaseOrder } from '../../../src/domain/po/service';
@@ -387,5 +388,19 @@ describe('Epic 7: [Invoice & Tax] Dual-NSFP, Tax Snapshot & 2-Way Matching Engin
       const overrideData = await overrideRes.json();
       expect(overrideData.data.matchStatus).toBe('EXCEPTION_OVERRIDDEN');
     });
+  });
+
+  afterAll(async () => {
+    if (testPoId) {
+      await sql`DELETE FROM invoice_matching_exception WHERE invoice_id IN (SELECT id FROM invoice WHERE po_id = ${testPoId})`;
+      await sql`DELETE FROM invoice WHERE po_id = ${testPoId}`;
+      await sql`DELETE FROM purchase_order_item WHERE po_id = ${testPoId}`;
+      await sql`DELETE FROM purchase_order WHERE id = ${testPoId}`;
+    }
+    if (vendorId) {
+      await sql`DELETE FROM vendor_bank_account WHERE vendor_id = ${vendorId}`;
+      await sql`DELETE FROM vendor WHERE id = ${vendorId}`;
+    }
+    await cleanupTestUsers([apUserId, headOfApUserId, regularUserId]);
   });
 });

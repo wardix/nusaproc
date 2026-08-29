@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { sql } from '../../../src/db/client';
 import { runMigrations } from '../../../src/db/migrate';
+import { cleanupTestUsers } from '../../helpers/test_cleaner';
 import { createVendor, createVendorBankAccount, verifyBankAccountStage } from '../../../src/domain/vendor/service';
 import { createPurchaseRequest, submitPurchaseRequest, decideApprovalStep } from '../../../src/domain/pr/service';
 import { createPurchaseOrder, approvePurchaseOrder, issuePurchaseOrder } from '../../../src/domain/po/service';
@@ -382,5 +383,13 @@ describe('Epic 6: Goods Receipt (BAST), Simultaneous Invoice Upload & SoD (R28â€
       const getData = await getRes.json();
       expect(getData.data.id).toBe(data.data.id);
     });
+  });
+
+  afterAll(async () => {
+    await cleanupTestUsers([poAuthorId, poApproverId, warehouseUserId, requesterId]);
+    if (vendorId) {
+      await sql`DELETE FROM vendor_bank_account WHERE vendor_id = ${vendorId}`;
+      await sql`DELETE FROM vendor WHERE id = ${vendorId}`;
+    }
   });
 });

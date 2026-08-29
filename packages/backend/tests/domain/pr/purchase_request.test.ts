@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { sql } from '../../../src/db/client';
 import { runMigrations } from '../../../src/db/migrate';
+import { cleanupTestUsers } from '../../helpers/test_cleaner';
 import {
   createPurchaseRequest,
   submitPurchaseRequest,
@@ -465,5 +466,9 @@ describe('Epic 4: Purchase Request (PR) Multi-Items, Cara Bayar & State Machine'
       const submitBody = await submitRes.json();
       expect(submitBody.data.status).toBe('SUBMITTED');
     });
+  });
+
+  afterAll(async () => {
+    await cleanupTestUsers([requesterId, approverLeadId, approverManagerId]);
   });
 });

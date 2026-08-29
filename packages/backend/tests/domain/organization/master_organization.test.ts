@@ -1,22 +1,46 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { createApp } from '../../../src';
-import { runSeed } from '../../../src/db/seed';
+import { sql } from '../../../src/db/client';
+import { cleanupTestUsers, cleanupTestBranches, cleanupTestDivisions } from '../../helpers/test_cleaner';
 
 describe('Epic Master Data: Branch Offices & Divisions Management (US12, R1, R2)', () => {
   const app = createApp();
+  const adminId = crypto.randomUUID();
+  const requesterId = crypto.randomUUID();
+
   const adminHeaders = {
     'Content-Type': 'application/json',
-    'X-User-Id': '00000000-0000-0000-0000-000000000002',
+    'X-User-Id': adminId,
     'X-User-Role': 'ADMIN',
   };
   const requesterHeaders = {
     'Content-Type': 'application/json',
-    'X-User-Id': '00000000-0000-0000-0000-000000000001',
+    'X-User-Id': requesterId,
     'X-User-Role': 'REQUESTER',
   };
 
   beforeAll(async () => {
-    await runSeed();
+    await sql`
+      INSERT INTO app_user (id, email, full_name, employee_id, division_id, branch_id, is_active)
+      VALUES
+        (${adminId}, ${`admin-org-${adminId.slice(0, 6)}@test.local`}, 'Admin Org Test', ${`EMP-ADM-${adminId.slice(0, 6)}`}, 'DIV-IT', 'HQ_MEDAN', TRUE),
+        (${requesterId}, ${`req-org-${requesterId.slice(0, 6)}@test.local`}, 'Req Org Test', ${`EMP-REQ-${requesterId.slice(0, 6)}`}, 'DIV-IT', 'HQ_MEDAN', TRUE)
+      ON CONFLICT (id) DO NOTHING;
+    `;
+
+    await sql`
+      INSERT INTO user_role_assignment (user_id, role, assigned_by)
+      VALUES
+        (${adminId}, 'ADMIN', ${adminId}),
+        (${requesterId}, 'REQUESTER', ${adminId})
+      ON CONFLICT (user_id, role) DO NOTHING;
+    `;
+  });
+
+  afterAll(async () => {
+    await cleanupTestUsers([adminId, requesterId]);
+    await sql`DELETE FROM master_branch WHERE code LIKE 'BRANCH-TEST-%' OR code LIKE 'BRANCH-BALI-%'`;
+    await sql`DELETE FROM master_division WHERE code LIKE 'DIV-TEST-%' OR code LIKE 'DIV-PROC-%'`;
   });
 
   describe('1. Master Branch Office Endpoints', () => {

@@ -1,12 +1,64 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { app } from '../../../src/index';
-import { runSeed } from '../../../src/db/seed';
 import { sql } from '../../../src/db/client';
 import { verifyAuthToken } from '../../../src/domain/auth/token';
+import { cleanupTestUsers } from '../../helpers/test_cleaner';
 
 describe('Epic 19: [Hybrid Auth] Google Workspace SSO & Local Fallback Login (R1, R2, R3)', () => {
+  const budiId = crypto.randomUUID();
+  const adminId = crypto.randomUUID();
+  const sitiId = crypto.randomUUID();
+  const wardixId = crypto.randomUUID();
+
   beforeAll(async () => {
-    await runSeed();
+    const passwordHash = await Bun.password.hash('Password123!', 'bcrypt');
+
+    // Create required test personas and use returning IDs
+    const [budi] = await sql`
+      INSERT INTO app_user (id, email, full_name, employee_id, division_id, branch_id, is_active, is_local_fallback, local_password_hash)
+      VALUES (${budiId}, 'budi.santoso@nusanet.net.id', 'Budi Santoso', 'EMP-TEST-BUDI', 'DIV-IT', 'HQ_MEDAN', TRUE, TRUE, ${passwordHash})
+      ON CONFLICT (email) DO UPDATE SET is_active = TRUE, is_local_fallback = TRUE, local_password_hash = EXCLUDED.local_password_hash
+      RETURNING id;
+    `;
+    const [admin] = await sql`
+      INSERT INTO app_user (id, email, full_name, employee_id, division_id, branch_id, is_active, is_local_fallback, local_password_hash)
+      VALUES (${adminId}, 'admin@nusanet.net.id', 'Administrator Test', 'EMP-TEST-ADM', 'DIV-IT', 'HQ_MEDAN', TRUE, TRUE, ${passwordHash})
+      ON CONFLICT (email) DO UPDATE SET is_active = TRUE, is_local_fallback = TRUE, local_password_hash = EXCLUDED.local_password_hash
+      RETURNING id;
+    `;
+    const [siti] = await sql`
+      INSERT INTO app_user (id, email, full_name, employee_id, division_id, branch_id, is_active, is_local_fallback, local_password_hash)
+      VALUES (${sitiId}, 'siti.aminah@nusanet.net.id', 'Siti Aminah', 'EMP-TEST-SITI', 'DIV-FIN', 'HQ_MEDAN', TRUE, TRUE, ${passwordHash})
+      ON CONFLICT (email) DO UPDATE SET is_active = TRUE, is_local_fallback = TRUE, local_password_hash = EXCLUDED.local_password_hash
+      RETURNING id;
+    `;
+    const [wardix] = await sql`
+      INSERT INTO app_user (id, email, full_name, employee_id, division_id, branch_id, is_active, is_local_fallback, local_password_hash)
+      VALUES (${wardixId}, 'wardix@nusa.id', 'Wardi', 'EMP-TEST-WARDIX', 'DIV-IT', 'HQ_MEDAN', TRUE, TRUE, ${passwordHash})
+      ON CONFLICT (email) DO UPDATE SET is_active = TRUE, is_local_fallback = TRUE, local_password_hash = EXCLUDED.local_password_hash
+      RETURNING id;
+    `;
+
+    await sql`
+      INSERT INTO user_role_assignment (user_id, role, assigned_by)
+      VALUES
+        (${budi.id}, 'REQUESTER', ${budi.id}),
+        (${admin.id}, 'ADMIN', ${admin.id}),
+        (${admin.id}, 'REQUESTER', ${admin.id}),
+        (${siti.id}, 'APPROVER', ${siti.id}),
+        (${wardix.id}, 'ADMIN', ${wardix.id})
+      ON CONFLICT (user_id, role) DO NOTHING;
+    `;
+  });
+
+  afterAll(async () => {
+    const testUsers = await sql`
+      SELECT id FROM app_user 
+      WHERE email IN ('budi.santoso@nusanet.net.id', 'siti.aminah@nusanet.net.id', 'admin@nusanet.net.id') 
+         OR email LIKE 'inactive.%' 
+         OR email LIKE 'new.engineer.%'
+    `;
+    await cleanupTestUsers(testUsers.map((u: { id: string }) => u.id));
   });
 
   describe('1. Local Email/Password Fallback Login (R1)', () => {

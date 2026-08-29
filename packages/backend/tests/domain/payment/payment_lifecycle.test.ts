@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { sql } from '../../../src/db/client';
 import { runMigrations } from '../../../src/db/migrate';
+import { cleanupTestUsers } from '../../helpers/test_cleaner';
 import { createVendor, createVendorBankAccount, verifyBankAccountStage } from '../../../src/domain/vendor/service';
 import { createPurchaseRequest, submitPurchaseRequest, decideApprovalStep } from '../../../src/domain/pr/service';
 import { createPurchaseOrder, approvePurchaseOrder, issuePurchaseOrder } from '../../../src/domain/po/service';
@@ -479,5 +480,13 @@ describe('Epic 8: [Payment Module] Maker-Checker-Executor, Uang Muka & Idempoten
       const execData = await execRes.json();
       expect(execData.data.status).toBe('EXECUTED');
     });
+  });
+
+  afterAll(async () => {
+    await cleanupTestUsers([makerUserId, checkerUserId, executorUserId]);
+    if (vendorId) {
+      await sql`DELETE FROM vendor_bank_account WHERE vendor_id = ${vendorId}`;
+      await sql`DELETE FROM vendor WHERE id = ${vendorId}`;
+    }
   });
 });

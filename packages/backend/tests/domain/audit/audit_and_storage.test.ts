@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { sql } from '../../../src/db/client';
 import { runMigrations } from '../../../src/db/migrate';
+import { cleanupTestUsers } from '../../helpers/test_cleaner';
 import {
   recordAuditTrailEntry,
   verifyAuditChainIntegrity,
@@ -255,5 +256,9 @@ describe('Epic 9: [Audit & Storage] Hash Chaining, ClamAV Scanner & Auditor Sand
       expect(exportRes.status).toBe(200);
       expect(exportRes.headers.get('Content-Type')).toBe('application/zip');
     });
+  });
+
+  afterAll(async () => {
+    await cleanupTestUsers([adminUserId, auditorUserId]);
   });
 });
