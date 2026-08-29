@@ -9,7 +9,7 @@ export async function cleanDatabase(): Promise<{ success: boolean; message: stri
     FROM information_schema.tables 
     WHERE table_schema = current_schema() 
       AND table_type = 'BASE TABLE'
-      AND table_name NOT IN ('schema_migrations', '_migrations');
+      AND table_name NOT IN ('schema_migrations', '_migrations', 'tax_rule_snapshot');
   `;
 
   if (rows.length > 0) {

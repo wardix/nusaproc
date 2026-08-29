@@ -15,7 +15,9 @@ export interface UserItem {
   fullName: string;
   employeeId: string;
   divisionId: string;
+  divisionName?: string;
   branchId: string;
+  branchName?: string;
   isActive: boolean;
   isLocalFallback: boolean;
   totpEnabled: boolean;

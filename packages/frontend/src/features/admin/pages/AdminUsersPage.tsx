@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Table,
   Button,
@@ -92,6 +92,18 @@ export const AdminUsersPage: React.FC = () => {
 
   const activeBranches = branchesData?.data || [];
   const activeDivisions = divisionsData?.data || [];
+
+  const branchMap = useMemo(() => {
+    const map = new Map<string, string>();
+    activeBranches.forEach((b) => map.set(b.code, b.name));
+    return map;
+  }, [activeBranches]);
+
+  const divisionMap = useMemo(() => {
+    const map = new Map<string, string>();
+    activeDivisions.forEach((d) => map.set(d.code, d.name));
+    return map;
+  }, [activeDivisions]);
 
   // Mutations
   const createMutation = useMutation({
@@ -218,12 +230,20 @@ export const AdminUsersPage: React.FC = () => {
     {
       title: 'Divisi / Cabang',
       key: 'org',
-      render: (_: unknown, record: UserItem) => (
-        <div>
-          <Tag color="geekblue">{record.divisionId}</Tag>
-          <Tag color="default">{record.branchId}</Tag>
-        </div>
-      ),
+      render: (_: unknown, record: UserItem) => {
+        const divName = record.divisionName || divisionMap.get(record.divisionId) || record.divisionId;
+        const brName = record.branchName || branchMap.get(record.branchId) || record.branchId;
+        return (
+          <Space direction="vertical" size={3}>
+            <Tag color="geekblue" style={{ margin: 0, whiteSpace: 'normal', height: 'auto', padding: '2px 8px' }}>
+              {divName}
+            </Tag>
+            <Tag color="default" style={{ margin: 0, whiteSpace: 'normal', height: 'auto', padding: '2px 8px' }}>
+              {brName}
+            </Tag>
+          </Space>
+        );
+      },
     },
     {
       title: 'Peran & Hak Akses (RBAC)',
@@ -368,12 +388,14 @@ export const AdminUsersPage: React.FC = () => {
               placeholder="Filter Divisi"
               style={{ width: '100%' }}
               allowClear
+              showSearch
+              optionFilterProp="children"
               value={divisionFilter}
               onChange={setDivisionFilter}
             >
               {activeDivisions.map((d) => (
                 <Select.Option key={d.code} value={d.code}>
-                  {d.code} ({d.name})
+                  {d.name}
                 </Select.Option>
               ))}
             </Select>
@@ -477,10 +499,10 @@ export const AdminUsersPage: React.FC = () => {
                 label="Divisi"
                 rules={[{ required: true, message: 'Divisi wajib dipilih' }]}
               >
-                <Select placeholder="Pilih Divisi">
+                <Select placeholder="Pilih Divisi" showSearch optionFilterProp="children">
                   {activeDivisions.map((d) => (
                     <Select.Option key={d.code} value={d.code}>
-                      {d.code} ({d.name})
+                      {d.name}
                     </Select.Option>
                   ))}
                 </Select>
@@ -492,10 +514,10 @@ export const AdminUsersPage: React.FC = () => {
                 label="Cabang Kantor"
                 rules={[{ required: true, message: 'Cabang wajib dipilih' }]}
               >
-                <Select placeholder="Pilih Cabang">
+                <Select placeholder="Pilih Cabang" showSearch optionFilterProp="children">
                   {activeBranches.map((b) => (
                     <Select.Option key={b.code} value={b.code}>
-                      {b.code} ({b.name})
+                      {b.name}
                     </Select.Option>
                   ))}
                 </Select>

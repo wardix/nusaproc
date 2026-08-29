@@ -284,16 +284,20 @@ export async function listUsers(params?: {
     SELECT
       u.id, u.email, u.full_name AS "fullName", u.employee_id AS "employeeId",
       u.division_id AS "divisionId", u.branch_id AS "branchId",
+      COALESCE(d.name, u.division_id) AS "divisionName",
+      COALESCE(b.name, u.branch_id) AS "branchName",
       u.is_active AS "isActive", u.is_local_fallback AS "isLocalFallback",
       u.totp_enabled AS "totpEnabled", u.last_login_at AS "lastLoginAt",
       u.created_at AS "createdAt", u.updated_at AS "updatedAt"
     FROM app_user u
+    LEFT JOIN master_division d ON d.code = u.division_id
+    LEFT JOIN master_branch b ON b.code = u.branch_id
     WHERE (${params?.divisionId ? sql`u.division_id = ${params.divisionId}` : sql`TRUE`})
       AND (${params?.branchId ? sql`u.branch_id = ${params.branchId}` : sql`TRUE`})
       AND (${params?.isActive !== undefined ? sql`u.is_active = ${params.isActive}` : sql`TRUE`})
       AND (${
         params?.search
-          ? sql`(u.full_name ILIKE ${`%${params.search}%`} OR u.email ILIKE ${`%${params.search}%`} OR u.employee_id ILIKE ${`%${params.search}%`})`
+          ? sql`(u.full_name ILIKE ${`%${params.search}%`} OR u.email ILIKE ${`%${params.search}%`} OR u.employee_id ILIKE ${`%${params.search}%`} OR d.name ILIKE ${`%${params.search}%`} OR b.name ILIKE ${`%${params.search}%`})`
           : sql`TRUE`
       })
       AND (${
@@ -308,12 +312,14 @@ export async function listUsers(params?: {
   const totalRes = await sql`
     SELECT COUNT(*)::int AS count
     FROM app_user u
+    LEFT JOIN master_division d ON d.code = u.division_id
+    LEFT JOIN master_branch b ON b.code = u.branch_id
     WHERE (${params?.divisionId ? sql`u.division_id = ${params.divisionId}` : sql`TRUE`})
       AND (${params?.branchId ? sql`u.branch_id = ${params.branchId}` : sql`TRUE`})
       AND (${params?.isActive !== undefined ? sql`u.is_active = ${params.isActive}` : sql`TRUE`})
       AND (${
         params?.search
-          ? sql`(u.full_name ILIKE ${`%${params.search}%`} OR u.email ILIKE ${`%${params.search}%`} OR u.employee_id ILIKE ${`%${params.search}%`})`
+          ? sql`(u.full_name ILIKE ${`%${params.search}%`} OR u.email ILIKE ${`%${params.search}%`} OR u.employee_id ILIKE ${`%${params.search}%`} OR d.name ILIKE ${`%${params.search}%`} OR b.name ILIKE ${`%${params.search}%`})`
           : sql`TRUE`
       })
       AND (${
