@@ -172,7 +172,7 @@ export function createAuthApp(): Hono {
   // POST /users (Create new user with atomic role assignments)
   app.post('/users', rbacMiddleware(['ADMIN']), async (c) => {
     try {
-      const adminId = c.req.header('X-User-Id') || '00000000-0000-0000-0000-000000000002';
+      const adminId = c.get('authUser')?.userId || c.req.header('X-User-Id');
       const body = await c.req.json().catch(() => ({}));
       const validated = createUserSchema.parse(body);
       const user = await createUser(validated, adminId);
@@ -186,7 +186,7 @@ export function createAuthApp(): Hono {
   // PATCH /users/:id/roles (Update user assigned roles)
   app.patch('/users/:id/roles', rbacMiddleware(['ADMIN']), async (c) => {
     try {
-      const adminId = c.req.header('X-User-Id') || '00000000-0000-0000-0000-000000000002';
+      const adminId = c.get('authUser')?.userId || c.req.header('X-User-Id');
       const id = c.req.param('id')!;
       const body = await c.req.json().catch(() => ({}));
       const validated = updateUserRolesSchema.parse(body);
@@ -201,7 +201,7 @@ export function createAuthApp(): Hono {
   // PATCH /users/:id/status (Toggle user active status with R64 delegation revocation)
   app.patch('/users/:id/status', rbacMiddleware(['ADMIN']), async (c) => {
     try {
-      const adminId = c.req.header('X-User-Id') || '00000000-0000-0000-0000-000000000002';
+      const adminId = c.get('authUser')?.userId || c.req.header('X-User-Id');
       const id = c.req.param('id')!;
       const body = await c.req.json().catch(() => ({}));
       const validated = updateUserStatusSchema.parse(body);

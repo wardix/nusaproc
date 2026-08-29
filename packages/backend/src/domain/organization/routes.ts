@@ -61,7 +61,7 @@ export function createOrganizationApp(): Hono {
   // POST /branches (Create branch - Admin only)
   app.post('/branches', rbacMiddleware(['ADMIN']), async (c) => {
     try {
-      const adminId = c.req.header('X-User-Id') || '00000000-0000-0000-0000-000000000002';
+      const adminId = c.get('authUser')?.userId || c.req.header('X-User-Id');
       const body = await c.req.json().catch(() => ({}));
       const validated = createBranchSchema.parse(body);
       const branch = await createBranch(validated, adminId);
@@ -75,7 +75,7 @@ export function createOrganizationApp(): Hono {
   // PUT /branches/:id (Update branch - Admin only)
   app.put('/branches/:id', rbacMiddleware(['ADMIN']), async (c) => {
     try {
-      const adminId = c.req.header('X-User-Id') || '00000000-0000-0000-0000-000000000002';
+      const adminId = c.get('authUser')?.userId || c.req.header('X-User-Id');
       const id = c.req.param('id')!;
       const body = await c.req.json().catch(() => ({}));
       const validated = updateBranchSchema.parse(body);
@@ -90,7 +90,7 @@ export function createOrganizationApp(): Hono {
   // PATCH /branches/:id/status (Toggle branch status - Admin only)
   app.patch('/branches/:id/status', rbacMiddleware(['ADMIN']), async (c) => {
     try {
-      const adminId = c.req.header('X-User-Id') || '00000000-0000-0000-0000-000000000002';
+      const adminId = c.get('authUser')?.userId || c.req.header('X-User-Id');
       const id = c.req.param('id')!;
       const body = await c.req.json().catch(() => ({}));
       const validated = toggleStatusSchema.parse(body);
@@ -139,7 +139,7 @@ export function createOrganizationApp(): Hono {
   // POST /divisions (Create division - Admin only)
   app.post('/divisions', rbacMiddleware(['ADMIN']), async (c) => {
     try {
-      const adminId = c.req.header('X-User-Id') || '00000000-0000-0000-0000-000000000002';
+      const adminId = c.get('authUser')?.userId || c.req.header('X-User-Id');
       const body = await c.req.json().catch(() => ({}));
       const validated = createDivisionSchema.parse(body);
       const division = await createDivision(validated, adminId);
@@ -153,7 +153,7 @@ export function createOrganizationApp(): Hono {
   // PUT /divisions/:id (Update division - Admin only)
   app.put('/divisions/:id', rbacMiddleware(['ADMIN']), async (c) => {
     try {
-      const adminId = c.req.header('X-User-Id') || '00000000-0000-0000-0000-000000000002';
+      const adminId = c.get('authUser')?.userId || c.req.header('X-User-Id');
       const id = c.req.param('id')!;
       const body = await c.req.json().catch(() => ({}));
       const validated = updateDivisionSchema.parse(body);
@@ -168,7 +168,7 @@ export function createOrganizationApp(): Hono {
   // PATCH /divisions/:id/status (Toggle division status - Admin only)
   app.patch('/divisions/:id/status', rbacMiddleware(['ADMIN']), async (c) => {
     try {
-      const adminId = c.req.header('X-User-Id') || '00000000-0000-0000-0000-000000000002';
+      const adminId = c.get('authUser')?.userId || c.req.header('X-User-Id');
       const id = c.req.param('id')!;
       const body = await c.req.json().catch(() => ({}));
       const validated = toggleStatusSchema.parse(body);

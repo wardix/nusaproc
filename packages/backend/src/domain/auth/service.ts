@@ -422,6 +422,9 @@ export async function createUser(input: CreateUserInput, createdBy: string): Pro
     ? await Bun.password.hash(input.initialPassword, 'bcrypt')
     : null;
 
+  // Resolve valid assigner ID (ensures no FK violation on user_role_assignment)
+  const assignerId = await resolveAssignerId(createdBy, userId);
+
   await withTransaction(async (tx) => {
     await tx`
       INSERT INTO app_user (
@@ -441,7 +444,7 @@ export async function createUser(input: CreateUserInput, createdBy: string): Pro
           user_id, role, is_tax_specialist, valid_from, valid_until, assigned_by
         ) VALUES (
           ${userId}, ${r.role}, ${r.isTaxSpecialist ?? false},
-          ${r.validFrom || sql`CURRENT_DATE`}, ${r.validUntil || null}, ${createdBy}
+          ${r.validFrom || sql`CURRENT_DATE`}, ${r.validUntil || null}, ${assignerId}
         )
       `;
     }
@@ -453,10 +456,13 @@ export async function createUser(input: CreateUserInput, createdBy: string): Pro
 export async function updateUserRoles(
   userId: string,
   input: UpdateUserRolesInput,
-  updatedBy: string
+  updatedBy?: string
 ): Promise<UserDetail> {
   // Ensure user exists
   await getUserById(userId);
+
+  // Resolve valid assigner ID (ensures no FK violation on user_role_assignment)
+  const assignerId = await resolveAssignerId(updatedBy, userId);
 
   await withTransaction(async (tx) => {
     await tx`
@@ -470,13 +476,34 @@ export async function updateUserRoles(
           user_id, role, is_tax_specialist, valid_from, valid_until, assigned_by
         ) VALUES (
           ${userId}, ${r.role}, ${r.isTaxSpecialist ?? false},
-          ${r.validFrom || sql`CURRENT_DATE`}, ${r.validUntil || null}, ${updatedBy}
+          ${r.validFrom || sql`CURRENT_DATE`}, ${r.validUntil || null}, ${assignerId}
         )
       `;
     }
   });
 
   return getUserById(userId);
+}
+
+async function resolveAssignerId(assignerId?: string, fallbackUserId?: string): Promise<string> {
+  if (assignerId) {
+    const check = await sql`SELECT id FROM app_user WHERE id = ${assignerId}`;
+    if (check.length > 0) return assignerId;
+  }
+  if (fallbackUserId) {
+    const checkFallback = await sql`SELECT id FROM app_user WHERE id = ${fallbackUserId}`;
+    if (checkFallback.length > 0) return fallbackUserId;
+  }
+  const adminUser = await sql`
+    SELECT u.id FROM app_user u
+    JOIN user_role_assignment ura ON u.id = ura.user_id
+    WHERE ura.role = 'ADMIN' AND u.is_active = TRUE
+    LIMIT 1
+  `;
+  if (adminUser.length > 0) return adminUser[0].id;
+  const anyUser = await sql`SELECT id FROM app_user WHERE is_active = TRUE LIMIT 1`;
+  if (anyUser.length > 0) return anyUser[0].id;
+  return fallbackUserId || assignerId || crypto.randomUUID();
 }
 
 export async function updateUserStatus(

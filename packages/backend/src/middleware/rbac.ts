@@ -1,5 +1,6 @@
 import type { Context, Next } from 'hono';
 import type { AppRole } from '@nusaproc/shared';
+import { verifyAuthToken } from '../domain/auth/token';
 import { formatProblemDetails, ForbiddenError } from '../domain/sod/errors';
 
 /**
@@ -7,8 +8,22 @@ import { formatProblemDetails, ForbiddenError } from '../domain/sod/errors';
  */
 export function rbacMiddleware(allowedRoles: AppRole[]) {
   return async (c: Context, next: Next) => {
+    // If authUser is not set in context, try to parse Bearer token from Authorization header
+    let authUser = c.get('authUser');
+    if (!authUser) {
+      const authHeader = c.req.header('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7).trim();
+        try {
+          authUser = await verifyAuthToken(token);
+          c.set('authUser', authUser);
+        } catch {
+          // Token invalid or expired; proceed to fallback check
+        }
+      }
+    }
+
     // Read from authenticated user in context, fallback to test header if present
-    const authUser = c.get('authUser');
     const headerRole = c.req.header('X-User-Role') as AppRole | undefined;
     const currentRole = authUser?.activeRole || headerRole;
 
