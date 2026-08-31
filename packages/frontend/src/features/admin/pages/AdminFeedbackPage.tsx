@@ -126,83 +126,82 @@ export const AdminFeedbackPage: React.FC = () => {
 
   const columns: TableProps<FeedbackItem>['columns'] = [
     {
-      title: 'Waktu Dibuat',
+      title: 'Waktu',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 150,
-      render: (val: string) => (
-        <Text style={{ fontSize: 13 }}>
-          {new Date(val).toLocaleString('id-ID', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </Text>
-      ),
+      width: 110,
+      render: (val: string) => {
+        const d = new Date(val);
+        return (
+          <Space direction="vertical" size={0}>
+            <Text style={{ fontSize: 12, fontWeight: 500 }}>
+              {d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </Text>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              {d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          </Space>
+        );
+      },
     },
     {
-      title: 'Pengirim',
+      title: 'Pengirim & Halaman',
       key: 'sender',
-      width: 180,
+      width: 190,
       render: (_, r) => (
-        <Space direction="vertical" size={1}>
-          <Text strong style={{ fontSize: 13 }}>
+        <Space direction="vertical" size={2}>
+          <Text strong style={{ fontSize: 13, display: 'block' }}>
             {r.userFullName || 'Pengguna Sistem'}
           </Text>
-          <Text type="secondary" style={{ fontSize: 11 }}>
+          <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
             {r.userEmail || '-'}
           </Text>
-          <Tag color="purple" style={{ fontSize: 10, lineHeight: '16px', padding: '0 4px' }}>
-            {r.activeRole}
-          </Tag>
+          <Space size={4} wrap style={{ marginTop: 2 }}>
+            <Tag color="purple" style={{ fontSize: 10, lineHeight: '16px', padding: '0 4px', margin: 0 }}>
+              {r.activeRole}
+            </Tag>
+            <Tag color="blue" style={{ fontSize: 10, lineHeight: '16px', padding: '0 4px', margin: 0, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {r.pageUrl}
+            </Tag>
+          </Space>
         </Space>
       ),
     },
     {
-      title: 'Kategori & Urgensi',
+      title: 'Kategori',
       key: 'category',
-      width: 160,
+      width: 130,
       render: (_, r) => {
         const cat = CATEGORY_TAGS[r.category] || CATEGORY_TAGS.FEEDBACK;
         const urg = URGENCY_TAGS[r.urgency] || URGENCY_TAGS.MEDIUM;
         return (
-          <Space direction="vertical" size={4}>
-            <Tag color={cat.color} icon={cat.icon}>
+          <Space direction="vertical" size={3}>
+            <Tag color={cat.color} icon={cat.icon} style={{ margin: 0 }}>
               {cat.label}
             </Tag>
             {r.category === 'BUG' && (
-              <Tag color={urg.color}>Urgensi: {urg.label}</Tag>
+              <Tag color={urg.color} style={{ fontSize: 11, margin: 0 }}>
+                {urg.label}
+              </Tag>
             )}
           </Space>
         );
       },
     },
     {
-      title: 'Halaman',
-      dataIndex: 'pageUrl',
-      key: 'pageUrl',
-      width: 140,
-      render: (val: string) => (
-        <Tag color="blue" style={{ maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {val}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Deskripsi Masukan',
+      title: 'Deskripsi Masukan & Laporan',
       key: 'description',
+      minWidth: 350,
       render: (_, r) => (
         <div>
           {r.title && (
-            <Text strong style={{ display: 'block', marginBottom: 2 }}>
+            <Text strong style={{ display: 'block', fontSize: 13, marginBottom: 2, color: '#1f1f1f' }}>
               {r.title}
             </Text>
           )}
           <Paragraph
-            ellipsis={{ rows: 2, expandable: false }}
-            style={{ marginBottom: 0, fontSize: 13, color: '#595959' }}
+            ellipsis={{ rows: 3, expandable: true, symbol: 'lihat selengkapnya' }}
+            style={{ marginBottom: 0, fontSize: 13, color: '#595959', lineHeight: '1.5' }}
           >
             {r.description}
           </Paragraph>
@@ -210,21 +209,22 @@ export const AdminFeedbackPage: React.FC = () => {
       ),
     },
     {
-      title: 'Screenshot',
+      title: 'Layar',
       dataIndex: 'screenshotData',
       key: 'screenshotData',
-      width: 100,
+      width: 75,
+      align: 'center',
       render: (val: string | null) =>
         val ? (
           <Image
             src={val}
             alt="Screenshot"
-            width={48}
-            height={36}
+            width={42}
+            height={32}
             style={{ objectFit: 'cover', borderRadius: 4, border: '1px solid #d9d9d9' }}
           />
         ) : (
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 11 }}>
             -
           </Text>
         ),
@@ -233,16 +233,17 @@ export const AdminFeedbackPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 140,
+      width: 120,
       render: (val: FeedbackStatus) => {
         const st = STATUS_TAGS[val] || STATUS_TAGS.OPEN;
-        return <Tag color={st.color}>{st.label}</Tag>;
+        return <Tag color={st.color} style={{ margin: 0 }}>{st.label}</Tag>;
       },
     },
     {
       title: 'Aksi',
       key: 'action',
-      width: 100,
+      width: 80,
+      align: 'center',
       render: (_, r) => (
         <Button
           type="link"
@@ -328,6 +329,7 @@ export const AdminFeedbackPage: React.FC = () => {
           columns={columns}
           dataSource={feedbacks}
           loading={loading}
+          scroll={{ x: 1050 }}
           pagination={{
             current: currentPage,
             pageSize,
