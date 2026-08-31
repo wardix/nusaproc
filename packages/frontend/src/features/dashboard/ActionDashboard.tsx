@@ -167,7 +167,7 @@ export const ActionDashboard: React.FC = () => {
           columns={columns}
           rowKey="id"
           pagination={false}
-          scroll={{ x: 600 }}
+          scroll={{ x: 650 }}
         />
       </Card>
     </div>

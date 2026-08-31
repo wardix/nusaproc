@@ -168,6 +168,7 @@ export const NcrListPage: React.FC = () => {
           dataSource={filteredNcrs}
           rowKey="id"
           loading={isLoading}
+          scroll={{ x: 800 }}
           pagination={{ pageSize: 10, showTotal: (total) => `Total ${total} laporan NCR` }}
         />
       </Card>
