@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Form, Input, Typography, Alert, Space } from 'antd';
+import { Modal, Form, Input, Typography, Alert, Space, theme } from 'antd';
 import { LockOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useReauthStore } from '../../stores/useReauthStore';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -7,6 +7,7 @@ import { useAuthStore } from '../../stores/useAuthStore';
 const { Text } = Typography;
 
 export const StepUpReauthModal: React.FC = () => {
+  const { token } = theme.useToken();
   const { isOpen, targetAction, errorDetail, closeModal, confirmReauth } = useReauthStore();
   const { user } = useAuthStore();
   const [form] = Form.useForm();
@@ -44,7 +45,7 @@ export const StepUpReauthModal: React.FC = () => {
     <Modal
       title={
         <Space>
-          <SafetyCertificateOutlined style={{ color: '#0052CC', fontSize: 20 }} />
+          <SafetyCertificateOutlined style={{ color: token.colorPrimary, fontSize: 20 }} />
           <span>Konfirmasi Tindakan Berisiko Tinggi (Step-Up Re-Auth)</span>
         </Space>
       }

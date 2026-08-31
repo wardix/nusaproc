@@ -12,7 +12,8 @@ import {
   Select,
   Row,
   Col,
-  message,
+  App,
+  theme,
   type TableProps,
 } from 'antd';
 import {
@@ -110,6 +111,8 @@ const DEFAULT_VENDORS: VendorDisplayItem[] = [
 ];
 
 export const VendorListPage: React.FC = () => {
+  const { message } = App.useApp();
+  const { token } = theme.useToken();
   const { user } = useAuthStore();
   const [vendors, setVendors] = useState<VendorDisplayItem[]>(DEFAULT_VENDORS);
   const [searchTerm, setSearchTerm] = useState('');
@@ -367,7 +370,7 @@ export const VendorListPage: React.FC = () => {
       <PageHeader
         title="Master Vendor & Rekening Bank (4-Eyes Principle R17–R19)"
         subtitle="Katalog vendor resmi, status PKP, dan kepatuhan verifikasi rekening ganda (4-Eyes Principle) untuk mencegah Fraudulent Bank Modification."
-        icon={<ShopOutlined style={{ color: '#0052CC' }} />}
+        icon={<ShopOutlined style={{ color: token.colorPrimary }} />}
         extra={
           <Button
             type="primary"

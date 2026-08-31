@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Button, Tag, Space, Card, Typography, Modal, Input, notification } from 'antd';
+import { Table, Button, Tag, Space, Card, Typography, Modal, Input, App, theme } from 'antd';
 import { PlusOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +12,8 @@ import { StatusTag } from '../../../components/common/StatusTag';
 const { Text } = Typography;
 
 export const PrListPage: React.FC = () => {
+  const { notification } = App.useApp();
+  const { token } = theme.useToken();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -63,7 +65,7 @@ export const PrListPage: React.FC = () => {
       title: 'Nomor PR',
       dataIndex: 'prNumber',
       key: 'prNumber',
-      render: (text: string) => <Text strong style={{ color: '#0052CC' }}>{text}</Text>,
+      render: (text: string) => <Text strong style={{ color: token.colorPrimary }}>{text}</Text>,
     },
     {
       title: 'Cost Center',
@@ -147,7 +149,7 @@ export const PrListPage: React.FC = () => {
       <PageHeader
         title="Daftar Permintaan Pembelian (Purchase Request)"
         subtitle="Kelola dan pantau seluruh pengajuan pengadaan barang/jasa dari unit kerja."
-        icon={<ShoppingCartOutlined style={{ color: '#0052CC' }} />}
+        icon={<ShoppingCartOutlined style={{ color: token.colorPrimary }} />}
         extra={
           <Button
             type="primary"

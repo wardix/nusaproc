@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Form, Input, Button, Typography, Divider, Alert, Select } from 'antd';
+import { Card, Form, Input, Button, Typography, Divider, Alert, Select, theme } from 'antd';
 import { UserOutlined, LockOutlined, GoogleOutlined, SafetyCertificateOutlined, LoginOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/useAuthStore';
@@ -39,6 +39,7 @@ declare global {
 const { Title, Text } = Typography;
 
 export const LoginPage: React.FC = () => {
+  const { token } = theme.useToken();
   const navigate = useNavigate();
   const { user, isAuthenticated, setUser, setToken } = useAuthStore();
   const [loading, setLoading] = useState(false);
@@ -188,7 +189,7 @@ export const LoginPage: React.FC = () => {
               height: 56,
               borderRadius: 16,
               background: '#E6F4FF',
-              color: '#0052CC',
+              color: token.colorPrimary,
               fontSize: 28,
               marginBottom: 12,
             }}
@@ -271,8 +272,6 @@ export const LoginPage: React.FC = () => {
               loading={loading}
               icon={<LoginOutlined />}
               style={{
-                backgroundColor: '#0052CC',
-                borderColor: '#0052CC',
                 fontWeight: 600,
                 height: 44,
               }}

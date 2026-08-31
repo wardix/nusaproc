@@ -10,7 +10,8 @@ import {
   Table,
   InputNumber,
   Radio,
-  message,
+  App,
+  theme,
 } from 'antd';
 import {
   InboxOutlined,
@@ -22,6 +23,8 @@ const { TextArea } = Input;
 const { Dragger } = Upload;
 
 export const BastCreateForm: React.FC = () => {
+  const { message } = App.useApp();
+  const { token } = theme.useToken();
   const [form] = Form.useForm();
 
   const mockPoItems = [
@@ -134,7 +137,7 @@ export const BastCreateForm: React.FC = () => {
           }}
         >
           <p className="ant-upload-drag-icon">
-            <InboxOutlined style={{ color: '#0052CC', fontSize: 48 }} />
+            <InboxOutlined style={{ color: token.colorPrimary, fontSize: 48 }} />
           </p>
           <p className="ant-upload-text" style={{ fontSize: 16, fontWeight: 600 }}>
             Tarik & Lepas File Invoice Vendor & Faktur Pajak (e-Faktur) ke sini

@@ -11,8 +11,9 @@ import {
   Space,
   Tag,
   Typography,
-  message,
   Tooltip,
+  App,
+  theme,
 } from 'antd';
 import {
   CustomerServiceOutlined,
@@ -37,6 +38,8 @@ const { TextArea } = Input;
 export const FeedbackWidget: React.FC = () => {
   const location = useLocation();
   const { user } = useAuthStore();
+  const { message } = App.useApp();
+  const { token } = theme.useToken();
   const [form] = Form.useForm();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -153,8 +156,6 @@ export const FeedbackWidget: React.FC = () => {
             onClick={handleOpenModal}
             style={{
               boxShadow: '0 4px 14px rgba(0, 82, 204, 0.4)',
-              background: '#0052CC',
-              borderColor: '#0052CC',
               fontWeight: 500,
             }}
           >
@@ -167,7 +168,7 @@ export const FeedbackWidget: React.FC = () => {
       <Modal
         title={
           <Space>
-            <CommentOutlined style={{ color: '#0052CC' }} />
+            <CommentOutlined style={{ color: token.colorPrimary }} />
             <span>Kirim Masukan & Laporan Kendala</span>
           </Space>
         }
@@ -277,7 +278,6 @@ export const FeedbackWidget: React.FC = () => {
               htmlType="submit"
               icon={<SendOutlined />}
               loading={isSubmitting}
-              style={{ background: '#0052CC', borderColor: '#0052CC' }}
             >
               Kirim Masukan
             </Button>

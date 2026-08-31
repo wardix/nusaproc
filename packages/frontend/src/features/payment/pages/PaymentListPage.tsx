@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Button, Space, Card, Typography, notification } from 'antd';
+import { Table, Button, Space, Card, Typography, App, theme } from 'antd';
 import { CheckOutlined, ThunderboltOutlined, DollarCircleOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { paymentApi } from '../../../api/endpoints/payment';
@@ -12,6 +12,8 @@ import { StatusTag } from '../../../components/common/StatusTag';
 const { Text } = Typography;
 
 export const PaymentListPage: React.FC = () => {
+  const { notification } = App.useApp();
+  const { token } = theme.useToken();
   const queryClient = useQueryClient();
   const { openModal } = useReauthStore();
 
@@ -63,7 +65,7 @@ export const PaymentListPage: React.FC = () => {
       title: 'Nomor Proposal',
       dataIndex: 'proposalNumber',
       key: 'proposalNumber',
-      render: (text: string) => <Text strong style={{ color: '#0052CC' }}>{text}</Text>,
+      render: (text: string) => <Text strong style={{ color: token.colorPrimary }}>{text}</Text>,
     },
     {
       title: 'Vendor Penerima',
@@ -99,7 +101,7 @@ export const PaymentListPage: React.FC = () => {
               type="primary"
               size="small"
               icon={<CheckOutlined />}
-              style={{ background: '#D48806', borderColor: '#D48806' }}
+              style={{ background: token.colorWarning, borderColor: token.colorWarning }}
               loading={checkMutation.isPending}
               onClick={() => checkMutation.mutate(record.id)}
             >
@@ -111,7 +113,7 @@ export const PaymentListPage: React.FC = () => {
               type="primary"
               size="small"
               icon={<ThunderboltOutlined />}
-              style={{ background: '#389E0D', borderColor: '#389E0D' }}
+              style={{ background: token.colorSuccess, borderColor: token.colorSuccess }}
               loading={executeMutation.isPending}
               onClick={() => handleExecutePayment(record.id)}
             >
@@ -128,7 +130,7 @@ export const PaymentListPage: React.FC = () => {
       <PageHeader
         title="Daftar Proposal Pembayaran (Maker-Checker-Executor R41–R45)"
         subtitle="Alur persetujuan pencairan dana terpisah (SoD) dan proteksi eksekusi transfer dengan Re-autentikasi (R43)."
-        icon={<DollarCircleOutlined style={{ color: '#0052CC' }} />}
+        icon={<DollarCircleOutlined style={{ color: token.colorPrimary }} />}
       />
 
       <Card title="Alur Persetujuan Pembayaran (Maker-Checker-Executor R42)">

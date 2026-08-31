@@ -11,8 +11,9 @@ import {
   Row,
   Col,
   Typography,
-  message,
   Tooltip,
+  App,
+  theme,
 } from 'antd';
 import { PlusOutlined, DeleteOutlined, SendOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { formatRupiah } from '../../../utils/currency';
@@ -40,6 +41,8 @@ const DEFAULT_UOM_OPTIONS = [
 ];
 
 export const PrCreateForm: React.FC = () => {
+  const { message } = App.useApp();
+  const { token } = theme.useToken();
   const [form] = Form.useForm();
   const { user } = useAuthStore();
   const [uomOptions, setUomOptions] = useState<{ value: string; label: string }[]>(DEFAULT_UOM_OPTIONS);
@@ -264,7 +267,7 @@ export const PrCreateForm: React.FC = () => {
           <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>
             Total Estimasi Anggaran Pengadaan:
           </Text>
-          <Text strong style={{ fontSize: 20, color: '#0052CC' }}>
+          <Text strong style={{ fontSize: 20, color: token.colorPrimary }}>
             {formatRupiah(grandTotal)}
           </Text>
         </div>

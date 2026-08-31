@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Button, Tag, Space, Card, Typography, Modal, Input, Drawer, notification } from 'antd';
+import { Table, Button, Tag, Space, Card, Typography, Modal, Input, Drawer, App, theme } from 'antd';
 import { SyncOutlined, EyeOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { invoiceApi } from '../../../api/endpoints/invoice';
@@ -25,6 +25,8 @@ export interface InvoiceItem {
 }
 
 export const InvoiceListPage: React.FC = () => {
+  const { notification } = App.useApp();
+  const { token } = theme.useToken();
   const queryClient = useQueryClient();
   const [overrideModalOpen, setOverrideModalOpen] = useState(false);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
@@ -80,7 +82,7 @@ export const InvoiceListPage: React.FC = () => {
       key: 'vendorInvoiceNumber',
       render: (text: string, record: InvoiceItem) => (
         <a onClick={() => setMatcherInvoice(record)}>
-          <Text strong style={{ color: '#0052CC', cursor: 'pointer' }}>
+          <Text strong style={{ color: token.colorPrimary, cursor: 'pointer' }}>
             {text}
           </Text>
         </a>
@@ -133,7 +135,7 @@ export const InvoiceListPage: React.FC = () => {
             <Button
               type="primary"
               size="small"
-              style={{ background: '#D48806', borderColor: '#D48806' }}
+              style={{ background: token.colorWarning, borderColor: token.colorWarning }}
               onClick={() => {
                 setSelectedInvoiceId(record.id);
                 setOverrideModalOpen(true);
@@ -152,7 +154,7 @@ export const InvoiceListPage: React.FC = () => {
       <PageHeader
         title="Verifikasi Tagihan Vendor & 2-Way Matching Engine (R33–R40)"
         subtitle="Pencocokan tagihan otomatis terhadap Surat Pesanan (PO), validasi Dual-NSFP Coretax, dan otorisasi selisih oleh Head of AP."
-        icon={<SafetyCertificateOutlined style={{ color: '#0052CC' }} />}
+        icon={<SafetyCertificateOutlined style={{ color: token.colorPrimary }} />}
       />
 
       <Card>
@@ -195,7 +197,7 @@ export const InvoiceListPage: React.FC = () => {
       <Drawer
         title={
           <Space>
-            <EyeOutlined style={{ color: '#0052CC' }} />
+            <EyeOutlined style={{ color: token.colorPrimary }} />
             <span>Evaluasi Side-by-Side 2-Way Matcher (R37, R38, R39)</span>
           </Space>
         }

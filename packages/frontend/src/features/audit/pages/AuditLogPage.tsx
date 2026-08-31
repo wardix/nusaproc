@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Typography, Alert, Button, Space, notification } from 'antd';
+import { Card, Typography, Alert, Button, Space, App, theme } from 'antd';
 import { DownloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { auditApi } from '../../../api/endpoints/audit';
@@ -8,6 +8,8 @@ import { PageHeader } from '../../../components/common/PageHeader';
 const { Title, Paragraph } = Typography;
 
 export const AuditLogPage: React.FC = () => {
+  const { notification } = App.useApp();
+  const { token } = theme.useToken();
   const { data: integrityData, isLoading } = useQuery({
     queryKey: ['audit-verify-chain'],
     queryFn: () => auditApi.verifyChain().catch(() => ({ data: { isValid: true, totalEntriesChecked: 15 } })),
@@ -38,7 +40,7 @@ export const AuditLogPage: React.FC = () => {
       <PageHeader
         title="Audit Trail & Kepatuhan Kriptografis (R51–R55)"
         subtitle="Pemeriksaan integritas berantai SHA-256 append-only (WORM) dan ekspor bundel pembuktian hukum."
-        icon={<SafetyCertificateOutlined style={{ color: '#0052CC' }} />}
+        icon={<SafetyCertificateOutlined style={{ color: token.colorPrimary }} />}
         extra={
           <Button
             type="primary"
