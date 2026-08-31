@@ -26,6 +26,7 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons';
 import { PageHeader } from '../../../components/common/PageHeader';
+import { formatDate, formatDateTime, formatRelativeTime } from '../../../utils/date';
 import {
   feedbackApi,
   type FeedbackItem,
@@ -133,20 +134,17 @@ export const AdminFeedbackPage: React.FC = () => {
       title: 'Waktu',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 110,
-      render: (val: string) => {
-        const d = new Date(val);
-        return (
-          <Space direction="vertical" size={0}>
-            <Text style={{ fontSize: 12, fontWeight: 500 }}>
-              {d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-            </Text>
-            <Text type="secondary" style={{ fontSize: 11 }}>
-              {d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-            </Text>
-          </Space>
-        );
-      },
+      width: 120,
+      render: (val: string) => (
+        <Space direction="vertical" size={0}>
+          <Text style={{ fontSize: 12, fontWeight: 500 }}>
+            {formatDate(val)}
+          </Text>
+          <Text type="secondary" style={{ fontSize: 11 }}>
+            {formatRelativeTime(val)}
+          </Text>
+        </Space>
+      ),
     },
     {
       title: 'Pengirim & Halaman',
@@ -384,7 +382,7 @@ export const AdminFeedbackPage: React.FC = () => {
                 <Tag color="blue">{selectedFeedback.pageUrl}</Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Waktu Lapor" span={2}>
-                {new Date(selectedFeedback.createdAt).toLocaleString('id-ID')}
+                {formatDateTime(selectedFeedback.createdAt)}
               </Descriptions.Item>
             </Descriptions>
 
