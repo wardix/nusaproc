@@ -1,17 +1,33 @@
 import React, { useState } from 'react';
-import { Table, Button, Tag, Space, Card, Typography, Modal, Input, notification } from 'antd';
-import { SyncOutlined, CheckCircleOutlined, WarningOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, Space, Card, Typography, Modal, Input, Drawer, notification } from 'antd';
+import { SyncOutlined, CheckCircleOutlined, WarningOutlined, EyeOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { invoiceApi } from '../../../api/endpoints/invoice';
 import { formatRupiah } from '../../../utils/currency';
+import { TwoWayMatcherScreen } from '../components/TwoWayMatcherScreen';
 
 const { Title, Text } = Typography;
+
+export interface InvoiceItem {
+  id: string;
+  vendorInvoiceNumber: string;
+  invoiceNumberInternal?: string;
+  nsfpOriginal?: string;
+  totalPayableAmount: number;
+  subtotalAmount?: number;
+  matchStatus: string;
+  poNumber?: string;
+  poId?: string;
+  invoiceDate?: string;
+  items?: Array<{ itemName: string; quantity: number; unitPrice: number; subtotal: number }>;
+}
 
 export const InvoiceListPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [overrideModalOpen, setOverrideModalOpen] = useState(false);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [overrideReason, setOverrideReason] = useState('');
+  const [matcherInvoice, setMatcherInvoice] = useState<InvoiceItem | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['invoices'],
@@ -53,14 +69,20 @@ export const InvoiceListPage: React.FC = () => {
     },
   });
 
-  const invoices = data?.data || [];
+  const invoices: InvoiceItem[] = data?.data || [];
 
   const columns = [
     {
       title: 'Nomor Invoice Vendor',
       dataIndex: 'vendorInvoiceNumber',
       key: 'vendorInvoiceNumber',
-      render: (text: string) => <Text strong style={{ color: '#0052CC' }}>{text}</Text>,
+      render: (text: string, record: InvoiceItem) => (
+        <a onClick={() => setMatcherInvoice(record)}>
+          <Text strong style={{ color: '#0052CC', cursor: 'pointer' }}>
+            {text}
+          </Text>
+        </a>
+      ),
     },
     {
       title: 'Nomor Internal',
@@ -100,8 +122,15 @@ export const InvoiceListPage: React.FC = () => {
     {
       title: 'Aksi',
       key: 'action',
-      render: (_: unknown, record: { id: string; matchStatus: string }) => (
+      render: (_: unknown, record: InvoiceItem) => (
         <Space size="small">
+          <Button
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => setMatcherInvoice(record)}
+          >
+            Matcher
+          </Button>
           <Button
             size="small"
             icon={<SyncOutlined />}
@@ -170,8 +199,40 @@ export const InvoiceListPage: React.FC = () => {
           style={{ marginTop: 12 }}
         />
       </Modal>
+
+      {/* Side-by-Side 2-Way Matcher Drawer */}
+      <Drawer
+        title={
+          <Space>
+            <EyeOutlined style={{ color: '#0052CC' }} />
+            <span>Evaluasi Side-by-Side 2-Way Matcher (R37, R38, R39)</span>
+          </Space>
+        }
+        width={960}
+        open={!!matcherInvoice}
+        onClose={() => setMatcherInvoice(null)}
+        destroyOnClose
+      >
+        {matcherInvoice && (
+          <TwoWayMatcherScreen
+            poData={{
+              poNumber: matcherInvoice.poNumber || matcherInvoice.poId || 'PO-202608-0001',
+              vendorName: 'PT Fiber Optik Nusantara',
+              totalAmount: Number(matcherInvoice.totalPayableAmount) || 10000000,
+            }}
+            invoiceData={{
+              invoiceNumber: matcherInvoice.vendorInvoiceNumber || 'INV-202608-0089',
+              invoiceDate: matcherInvoice.invoiceDate,
+              subtotalAmount: Number(matcherInvoice.subtotalAmount || matcherInvoice.totalPayableAmount) || 10000000,
+              variance: 0,
+              variancePct: 0,
+            }}
+          />
+        )}
+      </Drawer>
     </div>
   );
 };
 
 export default InvoiceListPage;
+

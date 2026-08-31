@@ -70,4 +70,19 @@ describe('Epic 11: [Frontend Features] Form.List PR, Side-by-Side Matcher & Make
       expect(getPaymentWorkflowCurrentStep('REJECTED')).toBe(1); // Rejected at checker stage
     });
   });
+
+  describe('4. Navigation and Route Mapping (Issue #47)', () => {
+    it('maps Approver routes and VendorListPage in router config', async () => {
+      const { routes } = await import('../../src/routes');
+      const rootRoute = routes.find((r) => r.path === '/');
+      const children = rootRoute?.children || [];
+      const childPaths = children.map((c) => c.path);
+
+      expect(childPaths).toContain('approvals/pr');
+      expect(childPaths).toContain('approvals/po');
+      expect(childPaths).toContain('vendors');
+      expect(childPaths).toContain('invoices');
+    });
+  });
 });
+
