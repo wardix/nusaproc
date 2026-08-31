@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, InputNumber, Select, AutoComplete, DatePicker, Button, Card, Space, Typography, message } from 'antd';
-import { PlusOutlined, DeleteOutlined, SendOutlined } from '@ant-design/icons';
+import {
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  AutoComplete,
+  DatePicker,
+  Button,
+  Card,
+  Row,
+  Col,
+  Typography,
+  message,
+  Tooltip,
+} from 'antd';
+import { PlusOutlined, DeleteOutlined, SendOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { formatRupiah } from '../../../utils/currency';
 import { calculatePrGrandTotal } from '../utils/calculator';
 import { useAuthStore } from '../../../stores/useAuthStore';
@@ -90,77 +104,168 @@ export const PrCreateForm: React.FC = () => {
       </Card>
 
       <Card title="Daftar Baris Barang / Jasa (R6 Multi-Item Form.List)">
+        {/* Header Kolom Tabel */}
+        <div
+          style={{
+            background: '#fafafa',
+            padding: '10px 12px',
+            borderRadius: 6,
+            marginBottom: 12,
+            border: '1px solid #f0f0f0',
+            fontWeight: 600,
+            color: '#595959',
+            fontSize: 13,
+          }}
+        >
+          <Row gutter={12} align="middle">
+            <Col xs={24} sm={8}>
+              Nama Barang / Jasa <Text type="danger">*</Text>
+            </Col>
+            <Col xs={12} sm={3}>
+              Qty <Text type="danger">*</Text>
+            </Col>
+            <Col xs={12} sm={3}>
+              Satuan <Text type="danger">*</Text>
+            </Col>
+            <Col xs={12} sm={4}>
+              <Tooltip title="Masukkan perkiraan harga per 1 unit/satuan barang sebelum pajak">
+                Harga Satuan (Rp) <InfoCircleOutlined style={{ fontSize: 12, color: '#1890ff' }} /> <Text type="danger">*</Text>
+              </Tooltip>
+            </Col>
+            <Col xs={12} sm={5} style={{ textAlign: 'right' }}>
+              Subtotal Baris (Rp)
+            </Col>
+            <Col xs={24} sm={1} style={{ textAlign: 'center' }} />
+          </Row>
+        </div>
+
         <Form.List name="items">
           {(fields, { add, remove }) => (
             <>
-              {fields.map(({ key, name, ...restField }) => (
-                <Space key={key} style={{ display: 'flex', marginBottom: 12 }} align="baseline" wrap>
-                  <Form.Item
-                    {...restField}
-                    name={[name, 'itemName']}
-                    rules={[{ required: true, message: 'Nama item wajib diisi' }]}
+              {fields.map(({ key, name, ...restField }, index) => {
+                const currentItem = watchedItems[index] || {};
+                const qty = Number(currentItem.quantityRequested) || 0;
+                const unitPrice = Number(currentItem.estimatedUnitPrice) || 0;
+                const subtotal = qty * unitPrice;
+
+                return (
+                  <div
+                    key={key}
+                    style={{
+                      padding: '8px 12px',
+                      background: index % 2 === 1 ? '#fafcff' : '#ffffff',
+                      borderRadius: 6,
+                      marginBottom: 8,
+                      border: '1px solid #f0f0f0',
+                    }}
                   >
-                    <Input placeholder="Nama Barang / Jasa" style={{ width: 260 }} />
-                  </Form.Item>
+                    <Row gutter={12} align="middle">
+                      <Col xs={24} sm={8}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'itemName']}
+                          rules={[{ required: true, message: 'Nama item wajib diisi' }]}
+                          style={{ marginBottom: 0 }}
+                        >
+                          <Input placeholder="Contoh: Router Switch 24-Port" />
+                        </Form.Item>
+                      </Col>
 
-                  <Form.Item
-                    {...restField}
-                    name={[name, 'quantityRequested']}
-                    rules={[{ required: true, message: 'Qty > 0' }]}
-                  >
-                    <InputNumber min={1} placeholder="Qty" style={{ width: 90 }} />
-                  </Form.Item>
+                      <Col xs={12} sm={3}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'quantityRequested']}
+                          rules={[{ required: true, message: 'Qty > 0' }]}
+                          style={{ marginBottom: 0 }}
+                        >
+                          <InputNumber min={1} placeholder="Qty" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
 
-                  <Form.Item
-                    {...restField}
-                    name={[name, 'uom']}
-                    rules={[{ required: true, message: 'Satuan wajib diisi' }]}
-                  >
-                    <AutoComplete
-                      options={uomOptions}
-                      filterOption={(inputValue, option) =>
-                        (option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase())
-                      }
-                      placeholder="Satuan (Pilih/Ketik)"
-                      style={{ width: 140 }}
-                    />
-                  </Form.Item>
+                      <Col xs={12} sm={3}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'uom']}
+                          rules={[{ required: true, message: 'Satuan wajib diisi' }]}
+                          style={{ marginBottom: 0 }}
+                        >
+                          <AutoComplete
+                            options={uomOptions}
+                            filterOption={(inputValue, option) =>
+                              (option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase())
+                            }
+                            placeholder="Pilih/Ketik"
+                            style={{ width: '100%' }}
+                          />
+                        </Form.Item>
+                      </Col>
 
-                  <Form.Item
-                    {...restField}
-                    name={[name, 'estimatedUnitPrice']}
-                    rules={[{ required: true, message: 'Harga satuan wajib diisi' }]}
-                  >
-                    <InputNumber<number>
-                      min={0}
-                      formatter={(val) => `Rp ${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-                      parser={(val) => (val ? Number(val.replace(/Rp\s?|(\.*)/g, '')) : 0)}
-                      placeholder="Estimasi Harga"
-                      style={{ width: 180 }}
-                    />
-                  </Form.Item>
+                      <Col xs={12} sm={4}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'estimatedUnitPrice']}
+                          rules={[{ required: true, message: 'Harga satuan wajib diisi' }]}
+                          style={{ marginBottom: 0 }}
+                        >
+                          <InputNumber<number>
+                            min={0}
+                            formatter={(val) => `Rp ${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                            parser={(val) => (val ? Number(val.replace(/Rp\s?|(\.*)/g, '')) : 0)}
+                            placeholder="Harga Satuan"
+                            style={{ width: '100%' }}
+                          />
+                        </Form.Item>
+                      </Col>
 
-                  {fields.length > 1 && (
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => remove(name)}
-                    />
-                  )}
-                </Space>
-              ))}
+                      <Col xs={12} sm={5} style={{ textAlign: 'right' }}>
+                        <Text strong style={{ fontSize: 14, color: subtotal > 0 ? '#1f1f1f' : '#bfbfbf' }}>
+                          {formatRupiah(subtotal)}
+                        </Text>
+                      </Col>
 
-              <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                Tambah Baris Item
+                      <Col xs={24} sm={1} style={{ textAlign: 'center' }}>
+                        {fields.length > 1 && (
+                          <Button
+                            type="text"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => remove(name)}
+                          />
+                        )}
+                      </Col>
+                    </Row>
+                  </div>
+                );
+              })}
+
+              <Button
+                type="dashed"
+                onClick={() => add({ itemName: '', quantityRequested: 1, uom: 'Unit', estimatedUnitPrice: 0 })}
+                block
+                icon={<PlusOutlined />}
+                style={{ marginTop: 8 }}
+              >
+                Tambah Baris Barang / Jasa
               </Button>
             </>
           )}
         </Form.List>
 
-        <div style={{ textAlign: 'right', marginTop: 24, padding: '12px 0', borderTop: '1px solid #f0f0f0' }}>
-          <Text strong style={{ fontSize: 18, color: '#0052CC' }}>
-            Total Estimasi Anggaran: {formatRupiah(grandTotal)}
+        <div
+          style={{
+            textAlign: 'right',
+            marginTop: 20,
+            padding: '14px 16px',
+            borderTop: '1px solid #f0f0f0',
+            background: '#fafafa',
+            borderRadius: 6,
+          }}
+        >
+          <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>
+            Total Estimasi Anggaran Pengadaan:
+          </Text>
+          <Text strong style={{ fontSize: 20, color: '#0052CC' }}>
+            {formatRupiah(grandTotal)}
           </Text>
         </div>
       </Card>
