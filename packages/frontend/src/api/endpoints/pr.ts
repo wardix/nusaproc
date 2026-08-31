@@ -42,4 +42,7 @@ export const prApi = {
 
   closePartial: (id: string, reason: string) =>
     apiClient.post(`/purchase-requests/${id}/close-partial`, { reason }).then((res) => res.data),
+
+  getUoms: (params?: { search?: string; isActive?: boolean }) =>
+    apiClient.get<{ success: boolean; data: Array<{ id: string; code: string; name: string; isActive: boolean }> }>('/uoms', { params }).then((res) => res.data),
 };

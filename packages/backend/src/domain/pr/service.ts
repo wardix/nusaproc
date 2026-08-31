@@ -1,4 +1,4 @@
-import { withTransaction } from '../../db/client';
+import { sql, withTransaction } from '../../db/client';
 import { PrRepository } from './repository';
 import {
   createPrSchema,
@@ -65,6 +65,19 @@ export async function createPurchaseRequest(input: CreatePrInput): Promise<PrWit
     });
 
     const items = await repo.insertItems(itemsToInsert);
+
+    // Auto-register any new UOM into master_uom (Pendekatan 2)
+    for (const item of itemsToInsert) {
+      if (item.uom && item.uom.trim()) {
+        const trimmed = item.uom.trim();
+        const code = trimmed.toUpperCase().replace(/\s+/g, '_');
+        await tx`
+          INSERT INTO master_uom (code, name, is_active)
+          VALUES (${code}, ${trimmed}, TRUE)
+          ON CONFLICT (code) DO UPDATE SET is_active = TRUE;
+        `;
+      }
+    }
 
     return {
       ...pr,
@@ -262,4 +275,20 @@ export async function getPurchaseRequestById(prId: string): Promise<PrWithDetail
     items,
     approvalInstances,
   };
+}
+
+export async function listMasterUoms(params?: {
+  search?: string;
+  isActive?: boolean;
+}): Promise<Array<{ id: string; code: string; name: string; isActive: boolean }>> {
+  const isActive = params?.isActive !== undefined ? params.isActive : true;
+  const searchPattern = params?.search ? `%${params.search.trim()}%` : null;
+
+  return await sql`
+    SELECT id, code, name, is_active AS "isActive"
+    FROM master_uom
+    WHERE (${isActive === undefined} OR is_active = ${isActive})
+      AND (${searchPattern === null} OR name ILIKE ${searchPattern} OR code ILIKE ${searchPattern})
+    ORDER BY name ASC;
+  `;
 }

@@ -1,17 +1,46 @@
-import React from 'react';
-import { Form, Input, InputNumber, Select, DatePicker, Button, Card, Space, Typography, message } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Form, Input, InputNumber, Select, AutoComplete, DatePicker, Button, Card, Space, Typography, message } from 'antd';
 import { PlusOutlined, DeleteOutlined, SendOutlined } from '@ant-design/icons';
 import { formatRupiah } from '../../../utils/currency';
 import { calculatePrGrandTotal } from '../utils/calculator';
 import { useAuthStore } from '../../../stores/useAuthStore';
+import { prApi } from '../../../api/endpoints/pr';
 
 const { Text } = Typography;
 const { TextArea } = Input;
 
+const DEFAULT_UOM_OPTIONS = [
+  { value: 'Box', label: 'Box' },
+  { value: 'Bulan', label: 'Bulan' },
+  { value: 'Kg', label: 'Kg' },
+  { value: 'Lisensi', label: 'Lisensi' },
+  { value: 'Lot', label: 'Lot' },
+  { value: 'Meter', label: 'Meter' },
+  { value: 'Pack', label: 'Pack' },
+  { value: 'Pcs', label: 'Pcs' },
+  { value: 'Rim', label: 'Rim' },
+  { value: 'Roll', label: 'Roll' },
+  { value: 'Set', label: 'Set' },
+  { value: 'Tahun', label: 'Tahun' },
+  { value: 'Unit', label: 'Unit' },
+];
+
 export const PrCreateForm: React.FC = () => {
   const [form] = Form.useForm();
   const { user } = useAuthStore();
+  const [uomOptions, setUomOptions] = useState<{ value: string; label: string }[]>(DEFAULT_UOM_OPTIONS);
   const watchedItems = Form.useWatch('items', form) || [];
+
+  useEffect(() => {
+    prApi
+      .getUoms({ isActive: true })
+      .then((res) => {
+        if (res.data && res.data.length > 0) {
+          setUomOptions(res.data.map((u) => ({ value: u.name, label: u.name })));
+        }
+      })
+      .catch((err) => console.warn('Failed to load UOMs from backend:', err));
+  }, []);
 
   // Kalkulasi grand total otomatis menggunakan calculator helper (R6)
   const grandTotal = calculatePrGrandTotal(watchedItems);
@@ -85,9 +114,16 @@ export const PrCreateForm: React.FC = () => {
                   <Form.Item
                     {...restField}
                     name={[name, 'uom']}
-                    rules={[{ required: true, message: 'Satuan' }]}
+                    rules={[{ required: true, message: 'Satuan wajib diisi' }]}
                   >
-                    <Input placeholder="Satuan (Pcs/Unit)" style={{ width: 120 }} />
+                    <AutoComplete
+                      options={uomOptions}
+                      filterOption={(inputValue, option) =>
+                        (option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase())
+                      }
+                      placeholder="Satuan (Pilih/Ketik)"
+                      style={{ width: 140 }}
+                    />
                   </Form.Item>
 
                   <Form.Item

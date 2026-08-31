@@ -6,6 +6,7 @@ import {
   updatePurchaseRequest,
   closePartialPurchaseRequest,
   getPurchaseRequestById,
+  listMasterUoms,
 } from './service';
 import { PrRepository } from './repository';
 import { formatProblemDetails } from '../sod/errors';
@@ -127,6 +128,19 @@ export function createPrApp(): Hono {
     const repo = new PrRepository();
     const prs = await repo.list({ requesterId, status, limit, offset });
     return c.json({ success: true, data: prs });
+  });
+
+  // GET /uoms (List active units of measure with optional search)
+  app.get('/uoms', async (c) => {
+    try {
+      const search = c.req.query('search');
+      const isActiveParam = c.req.query('isActive');
+      const isActive = isActiveParam !== undefined ? isActiveParam === 'true' : true;
+      const uoms = await listMasterUoms({ search, isActive });
+      return c.json({ success: true, data: uoms }, 200);
+    } catch (err: unknown) {
+      return c.json(formatProblemDetails(err, c.req.path), 500);
+    }
   });
 
   return app;
