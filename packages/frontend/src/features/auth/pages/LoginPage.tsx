@@ -40,11 +40,18 @@ const { Title, Text } = Typography;
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { setUser, setToken } = useAuthStore();
+  const { user, isAuthenticated, setUser, setToken } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [gisReady, setGisReady] = useState(false);
   const [form] = Form.useForm();
+
+  // If already authenticated, redirect immediately to dashboard
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
