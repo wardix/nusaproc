@@ -153,6 +153,7 @@ export const TwoWayMatcherScreen: React.FC<MatcherProps> = ({ poData, invoiceDat
               rowKey="itemName"
               pagination={false}
               size="small"
+              scroll={{ x: 450 }}
             />
           </Card>
         </Col>
@@ -180,6 +181,7 @@ export const TwoWayMatcherScreen: React.FC<MatcherProps> = ({ poData, invoiceDat
               rowKey="itemName"
               pagination={false}
               size="small"
+              scroll={{ x: 450 }}
             />
           </Card>
         </Col>

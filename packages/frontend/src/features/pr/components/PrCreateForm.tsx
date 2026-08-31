@@ -12,6 +12,8 @@ import {
   Col,
   Typography,
   Tooltip,
+  Tag,
+  Grid,
   App,
   theme,
 } from 'antd';
@@ -43,6 +45,8 @@ const DEFAULT_UOM_OPTIONS = [
 export const PrCreateForm: React.FC = () => {
   const { message } = App.useApp();
   const { token } = theme.useToken();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.sm;
   const [form] = Form.useForm();
   const { user } = useAuthStore();
   const [uomOptions, setUomOptions] = useState<{ value: string; label: string }[]>(DEFAULT_UOM_OPTIONS);
@@ -107,40 +111,42 @@ export const PrCreateForm: React.FC = () => {
       </Card>
 
       <Card title="Daftar Baris Barang / Jasa (R6 Multi-Item Form.List)">
-        {/* Header Kolom Tabel */}
-        <div
-          style={{
-            background: '#fafafa',
-            padding: '10px 12px',
-            borderRadius: 6,
-            marginBottom: 12,
-            border: '1px solid #f0f0f0',
-            fontWeight: 600,
-            color: '#595959',
-            fontSize: 13,
-          }}
-        >
-          <Row gutter={12} align="middle">
-            <Col xs={24} sm={8}>
-              Nama Barang / Jasa <Text type="danger">*</Text>
-            </Col>
-            <Col xs={12} sm={3}>
-              Qty <Text type="danger">*</Text>
-            </Col>
-            <Col xs={12} sm={3}>
-              Satuan <Text type="danger">*</Text>
-            </Col>
-            <Col xs={12} sm={4}>
-              <Tooltip title="Masukkan perkiraan harga per 1 unit/satuan barang sebelum pajak">
-                Harga Satuan (Rp) <InfoCircleOutlined style={{ fontSize: 12, color: '#1890ff' }} /> <Text type="danger">*</Text>
-              </Tooltip>
-            </Col>
-            <Col xs={12} sm={5} style={{ textAlign: 'right' }}>
-              Subtotal Baris (Rp)
-            </Col>
-            <Col xs={24} sm={1} style={{ textAlign: 'center' }} />
-          </Row>
-        </div>
+        {/* Header Kolom Tabel (Hanya Tampil di Desktop/Tablet) */}
+        {!isMobile && (
+          <div
+            style={{
+              background: '#fafafa',
+              padding: '10px 12px',
+              borderRadius: 6,
+              marginBottom: 12,
+              border: '1px solid #f0f0f0',
+              fontWeight: 600,
+              color: '#595959',
+              fontSize: 13,
+            }}
+          >
+            <Row gutter={12} align="middle">
+              <Col xs={24} sm={8}>
+                Nama Barang / Jasa <Text type="danger">*</Text>
+              </Col>
+              <Col xs={12} sm={3}>
+                Qty <Text type="danger">*</Text>
+              </Col>
+              <Col xs={12} sm={3}>
+                Satuan <Text type="danger">*</Text>
+              </Col>
+              <Col xs={12} sm={4}>
+                <Tooltip title="Masukkan perkiraan harga per 1 unit/satuan barang sebelum pajak">
+                  Harga Satuan (Rp) <InfoCircleOutlined style={{ fontSize: 12, color: '#1890ff' }} /> <Text type="danger">*</Text>
+                </Tooltip>
+              </Col>
+              <Col xs={12} sm={5} style={{ textAlign: 'right' }}>
+                Subtotal Baris (Rp)
+              </Col>
+              <Col xs={24} sm={1} style={{ textAlign: 'center' }} />
+            </Row>
+          </div>
+        )}
 
         <Form.List name="items">
           {(fields, { add, remove }) => (
@@ -155,20 +161,50 @@ export const PrCreateForm: React.FC = () => {
                   <div
                     key={key}
                     style={{
-                      padding: '8px 12px',
+                      padding: isMobile ? '12px 14px' : '8px 12px',
                       background: index % 2 === 1 ? '#fafcff' : '#ffffff',
                       borderRadius: 6,
-                      marginBottom: 8,
+                      marginBottom: 12,
                       border: '1px solid #f0f0f0',
+                      boxShadow: isMobile ? '0 1px 2px rgba(0,0,0,0.03)' : 'none',
                     }}
                   >
-                    <Row gutter={12} align="middle">
+                    {isMobile && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: 10,
+                          paddingBottom: 6,
+                          borderBottom: '1px solid #f0f0f0',
+                        }}
+                      >
+                        <Tag color="blue" style={{ fontWeight: 600 }}>
+                          Item #{index + 1}
+                        </Tag>
+                        {fields.length > 1 && (
+                          <Button
+                            type="text"
+                            danger
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={() => remove(name)}
+                          >
+                            Hapus Baris
+                          </Button>
+                        )}
+                      </div>
+                    )}
+
+                    <Row gutter={isMobile ? [8, 8] : 12} align="middle">
                       <Col xs={24} sm={8}>
                         <Form.Item
                           {...restField}
                           name={[name, 'itemName']}
+                          label={isMobile ? 'Nama Barang / Jasa' : undefined}
                           rules={[{ required: true, message: 'Nama item wajib diisi' }]}
-                          style={{ marginBottom: 0 }}
+                          style={{ marginBottom: isMobile ? 8 : 0 }}
                         >
                           <Input placeholder="Contoh: Router Switch 24-Port" />
                         </Form.Item>
@@ -178,8 +214,9 @@ export const PrCreateForm: React.FC = () => {
                         <Form.Item
                           {...restField}
                           name={[name, 'quantityRequested']}
+                          label={isMobile ? 'Jumlah (Qty)' : undefined}
                           rules={[{ required: true, message: 'Qty > 0' }]}
-                          style={{ marginBottom: 0 }}
+                          style={{ marginBottom: isMobile ? 8 : 0 }}
                         >
                           <InputNumber min={1} placeholder="Qty" style={{ width: '100%' }} />
                         </Form.Item>
@@ -189,8 +226,9 @@ export const PrCreateForm: React.FC = () => {
                         <Form.Item
                           {...restField}
                           name={[name, 'uom']}
+                          label={isMobile ? 'Satuan' : undefined}
                           rules={[{ required: true, message: 'Satuan wajib diisi' }]}
-                          style={{ marginBottom: 0 }}
+                          style={{ marginBottom: isMobile ? 8 : 0 }}
                         >
                           <AutoComplete
                             options={uomOptions}
@@ -203,12 +241,13 @@ export const PrCreateForm: React.FC = () => {
                         </Form.Item>
                       </Col>
 
-                      <Col xs={12} sm={4}>
+                      <Col xs={24} sm={4}>
                         <Form.Item
                           {...restField}
                           name={[name, 'estimatedUnitPrice']}
+                          label={isMobile ? 'Perkiraan Harga Satuan (Rp)' : undefined}
                           rules={[{ required: true, message: 'Harga satuan wajib diisi' }]}
-                          style={{ marginBottom: 0 }}
+                          style={{ marginBottom: isMobile ? 8 : 0 }}
                         >
                           <InputNumber<number>
                             min={0}
@@ -220,22 +259,42 @@ export const PrCreateForm: React.FC = () => {
                         </Form.Item>
                       </Col>
 
-                      <Col xs={12} sm={5} style={{ textAlign: 'right' }}>
-                        <Text strong style={{ fontSize: 14, color: subtotal > 0 ? '#1f1f1f' : '#bfbfbf' }}>
-                          {formatRupiah(subtotal)}
-                        </Text>
-                      </Col>
-
-                      <Col xs={24} sm={1} style={{ textAlign: 'center' }}>
-                        {fields.length > 1 && (
-                          <Button
-                            type="text"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => remove(name)}
-                          />
+                      <Col xs={24} sm={5} style={{ textAlign: isMobile ? 'left' : 'right' }}>
+                        {isMobile ? (
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              background: '#fafafa',
+                              padding: '6px 10px',
+                              borderRadius: 4,
+                              marginTop: 4,
+                            }}
+                          >
+                            <Text type="secondary" style={{ fontSize: 12 }}>Subtotal Item:</Text>
+                            <Text strong style={{ fontSize: 14, color: subtotal > 0 ? token.colorPrimary : '#bfbfbf' }}>
+                              {formatRupiah(subtotal)}
+                            </Text>
+                          </div>
+                        ) : (
+                          <Text strong style={{ fontSize: 14, color: subtotal > 0 ? '#1f1f1f' : '#bfbfbf' }}>
+                            {formatRupiah(subtotal)}
+                          </Text>
                         )}
                       </Col>
+
+                      {!isMobile && (
+                        <Col xs={24} sm={1} style={{ textAlign: 'center' }}>
+                          {fields.length > 1 && (
+                            <Button
+                              type="text"
+                              danger
+                              icon={<DeleteOutlined />}
+                              onClick={() => remove(name)}
+                            />
+                          )}
+                        </Col>
+                      )}
                     </Row>
                   </div>
                 );

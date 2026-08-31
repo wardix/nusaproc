@@ -406,6 +406,7 @@ export const AdminUsersPage: React.FC = () => {
           columns={columns}
           rowKey="id"
           loading={isLoading}
+          scroll={{ x: 800 }}
           pagination={{ pageSize: 10, showTotal: (total) => `Total ${total} pengguna` }}
         />
       </Card>
@@ -417,6 +418,7 @@ export const AdminUsersPage: React.FC = () => {
         onCancel={() => setIsCreateModalOpen(false)}
         footer={null}
         width={560}
+        style={{ maxWidth: 'calc(100vw - 32px)' }}
       >
         <Form
           form={createForm}
@@ -554,6 +556,7 @@ export const AdminUsersPage: React.FC = () => {
         }}
         footer={null}
         width={500}
+        style={{ maxWidth: 'calc(100vw - 32px)' }}
       >
         <Form form={editRolesForm} layout="vertical" onFinish={handleEditRolesSubmit}>
           <Form.Item

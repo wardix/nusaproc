@@ -115,7 +115,7 @@ export const BastCreateForm: React.FC = () => {
       </Card>
 
       <Card title="Daftar Item Diterima Fisik" style={{ marginBottom: 24 }}>
-        <Table dataSource={mockPoItems} columns={columns} pagination={false} size="middle" />
+        <Table dataSource={mockPoItems} columns={columns} pagination={false} size="middle" scroll={{ x: 600 }} />
       </Card>
 
       {/* Simultaneous Invoice & Tax Invoice Upload Component (R29) */}

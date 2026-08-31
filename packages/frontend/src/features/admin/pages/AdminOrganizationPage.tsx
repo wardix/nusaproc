@@ -418,6 +418,7 @@ export const AdminOrganizationPage: React.FC = () => {
                     dataSource={branches}
                     rowKey="id"
                     loading={isBranchesLoading}
+                    scroll={{ x: 750 }}
                     pagination={{ pageSize: 10, showTotal: (total) => `Total ${total} kantor cabang` }}
                   />
                 </div>
@@ -472,6 +473,7 @@ export const AdminOrganizationPage: React.FC = () => {
                     dataSource={divisions}
                     rowKey="id"
                     loading={isDivisionsLoading}
+                    scroll={{ x: 750 }}
                     pagination={{ pageSize: 10, showTotal: (total) => `Total ${total} divisi` }}
                   />
                 </div>
@@ -493,6 +495,7 @@ export const AdminOrganizationPage: React.FC = () => {
         confirmLoading={createBranchMutation.isPending}
         okText="Simpan Kantor Cabang"
         cancelText="Batal"
+        style={{ maxWidth: 'calc(100vw - 32px)' }}
       >
         <Form
           form={createBranchForm}
@@ -547,6 +550,7 @@ export const AdminOrganizationPage: React.FC = () => {
         confirmLoading={updateBranchMutation.isPending}
         okText="Perbarui Cabang"
         cancelText="Batal"
+        style={{ maxWidth: 'calc(100vw - 32px)' }}
       >
         <Form
           form={editBranchForm}
@@ -606,6 +610,7 @@ export const AdminOrganizationPage: React.FC = () => {
         confirmLoading={createDivisionMutation.isPending}
         okText="Simpan Divisi"
         cancelText="Batal"
+        style={{ maxWidth: 'calc(100vw - 32px)' }}
       >
         <Form
           form={createDivisionForm}
@@ -652,6 +657,7 @@ export const AdminOrganizationPage: React.FC = () => {
         confirmLoading={updateDivisionMutation.isPending}
         okText="Perbarui Divisi"
         cancelText="Batal"
+        style={{ maxWidth: 'calc(100vw - 32px)' }}
       >
         <Form
           form={editDivisionForm}

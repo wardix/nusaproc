@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Typography, Grid, theme } from 'antd';
+import { Layout, Menu, Typography, Grid, theme, Drawer, Button } from 'antd';
+import { MenuOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { RoleSwitcher } from './RoleSwitcher';
@@ -19,6 +20,7 @@ export const AppLayout: React.FC = () => {
   const screens = useBreakpoint();
   const { user, isAuthenticated } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // If user is not authenticated and not present in store, redirect to /login
   if (!isAuthenticated && !user) {
@@ -60,7 +62,7 @@ export const AppLayout: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0 20px',
+          padding: isMobile ? '0 12px' : '0 20px',
           background: token.colorPrimary,
           height: 64,
           position: 'sticky',
@@ -69,39 +71,50 @@ export const AppLayout: React.FC = () => {
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Title level={4} style={{ color: '#fff', margin: 0, letterSpacing: -0.5 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {isMobile && (
+            <Button
+              type="text"
+              aria-label="Buka Menu Navigasi"
+              icon={<MenuOutlined style={{ color: '#fff', fontSize: 18 }} />}
+              onClick={() => setMobileDrawerOpen(true)}
+              style={{ padding: 4 }}
+            />
+          )}
+          <Title level={4} style={{ color: '#fff', margin: 0, letterSpacing: -0.5, fontSize: isMobile ? 18 : 20 }}>
             {import.meta.env.VITE_APP_NAME || 'NusaProc'}
           </Title>
         </div>
         <RoleSwitcher />
       </Header>
       <Layout>
-        <Sider
-          width={240}
-          collapsible
-          collapsed={isMobile ? true : collapsed}
-          onCollapse={(value) => setCollapsed(value)}
-          theme="light"
-          breakpoint="lg"
-          collapsedWidth={isMobile ? 0 : 80}
-          style={{
-            overflow: 'auto',
-            height: 'calc(100vh - 64px)',
-            position: 'sticky',
-            top: 64,
-            left: 0,
-            borderRight: '1px solid #f0f0f0',
-          }}
-        >
-          <Menu
-            mode="inline"
-            selectedKeys={getSelectedMenuKeys(location.pathname)}
-            items={menuItems}
-            onClick={({ key }) => navigate(key)}
-            style={{ borderRight: 0, paddingTop: 8 }}
-          />
-        </Sider>
+        {!isMobile && (
+          <Sider
+            width={240}
+            collapsible
+            collapsed={collapsed}
+            onCollapse={(value) => setCollapsed(value)}
+            theme="light"
+            breakpoint="lg"
+            collapsedWidth={80}
+            style={{
+              overflow: 'auto',
+              height: 'calc(100vh - 64px)',
+              position: 'sticky',
+              top: 64,
+              left: 0,
+              borderRight: '1px solid #f0f0f0',
+            }}
+          >
+            <Menu
+              mode="inline"
+              selectedKeys={getSelectedMenuKeys(location.pathname)}
+              items={menuItems}
+              onClick={({ key }) => navigate(key)}
+              style={{ borderRight: 0, paddingTop: 8 }}
+            />
+          </Sider>
+        )}
         <Layout style={{ padding: isMobile ? '12px' : '24px' }}>
           <Content
             style={{
@@ -121,6 +134,34 @@ export const AppLayout: React.FC = () => {
           </Content>
         </Layout>
       </Layout>
+
+      {/* Drawer Menu Navigasi Mobile (R56, Resolusi Ponsel >= 360px) */}
+      <Drawer
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Title level={4} style={{ margin: 0, color: token.colorPrimary }}>
+              {import.meta.env.VITE_APP_NAME || 'NusaProc'}
+            </Title>
+          </div>
+        }
+        placement="left"
+        onClose={() => setMobileDrawerOpen(false)}
+        open={mobileDrawerOpen}
+        bodyStyle={{ padding: 0 }}
+        width={280}
+      >
+        <Menu
+          mode="inline"
+          selectedKeys={getSelectedMenuKeys(location.pathname)}
+          items={menuItems}
+          onClick={({ key }) => {
+            navigate(key);
+            setMobileDrawerOpen(false);
+          }}
+          style={{ borderRight: 0, paddingTop: 8 }}
+        />
+      </Drawer>
+
       <FeedbackWidget />
     </Layout>
   );
