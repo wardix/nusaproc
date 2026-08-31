@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { receiptApi } from '../../../api/endpoints/receipt';
 import { PageHeader } from '../../../components/common/PageHeader';
 import { StatusTag } from '../../../components/common/StatusTag';
+import { formatDateTime } from '../../../utils/date';
 
 const { Text, Paragraph } = Typography;
 
@@ -112,7 +113,7 @@ export const NcrListPage: React.FC = () => {
       key: 'createdAt',
       render: (dateStr: string) => (
         <Text style={{ fontSize: 12 }}>
-          {dateStr ? new Date(dateStr).toLocaleString('id-ID') : '-'}
+          {formatDateTime(dateStr)}
         </Text>
       ),
     },

@@ -10,6 +10,7 @@ import { useAuthStore } from '../../stores/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/common/PageHeader';
 import { RoleTag } from '../../components/common/StatusTag';
+import { formatRupiah, formatRupiahCompact } from '../../utils/currency';
 
 const { Text } = Typography;
 
@@ -76,8 +77,7 @@ export const ActionDashboard: React.FC = () => {
       title: 'Nominal',
       dataIndex: 'amount',
       key: 'amount',
-      render: (amount?: number) =>
-        amount ? `Rp ${amount.toLocaleString('id-ID')}` : '-',
+      render: (amount?: number) => (amount ? formatRupiah(amount) : '-'),
     },
     {
       title: 'Status SLA',
@@ -154,7 +154,7 @@ export const ActionDashboard: React.FC = () => {
           <Card>
             <Statistic
               title="Total Nilai Antrean"
-              value="Rp 75 Juta"
+              value={formatRupiahCompact(75_000_000)}
               valueStyle={{ color: token.colorTextHeading }}
             />
           </Card>

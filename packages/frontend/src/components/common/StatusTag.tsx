@@ -61,6 +61,37 @@ export interface StatusTagProps {
   style?: React.CSSProperties;
 }
 
+export const STATUS_LABELS: Record<string, string> = {
+  // PR
+  'PR:DRAFT': 'Draft',
+  'PR:SUBMITTED': 'Diajukan',
+  'PR:APPROVED': 'Disetujui',
+  'PR:REJECTED': 'Ditolak',
+  'PR:CLOSED_PARTIAL': 'Selesai Sebagian',
+  // PO
+  'PO:DRAFT': 'Draft',
+  'PO:APPROVED': 'Disetujui',
+  'PO:ISSUED': 'Diterbitkan (Issued)',
+  'PO:AMENDED': 'Diamandemen',
+  'PO:CANCELLED': 'Dibatalkan',
+  // Invoice
+  'INVOICE:MATCHED_OK': 'Cocok Sempurna (Matched)',
+  'INVOICE:MATCHED_WITH_EXCEPTION': 'Selisih (Exception)',
+  'INVOICE:EXCEPTION_OVERRIDDEN': 'Dilepas (Overridden)',
+  'INVOICE:UNMATCHED': 'Belum Dicocokkan',
+  // Payment
+  'PAYMENT:PROPOSED': 'Diajukan (Maker)',
+  'PAYMENT:CHECKED': 'Diperiksa (Checker)',
+  'PAYMENT:EXECUTED': 'Dibayar (Executor)',
+  'PAYMENT:REJECTED': 'Ditolak',
+  // NCR
+  'NCR:RESOLVED': 'Selesai (Resolved)',
+  'NCR:OPEN': 'Dalam Investigasi (Open)',
+  // Active
+  'ACTIVE': 'Aktif',
+  'INACTIVE': 'Nonaktif',
+};
+
 export const StatusTag: React.FC<StatusTagProps> = ({ status, category = 'generic', text, style }) => {
   const statusStr = typeof status === 'boolean' ? (status ? 'ACTIVE' : 'INACTIVE') : String(status).toUpperCase();
 
@@ -68,14 +99,14 @@ export const StatusTag: React.FC<StatusTagProps> = ({ status, category = 'generi
   if (statusStr === 'ACTIVE' || statusStr === 'AKTIF' || status === true) {
     return (
       <Tag icon={<CheckCircleOutlined />} color="success" style={style}>
-        {text || 'AKTIF'}
+        {text || STATUS_LABELS['ACTIVE']}
       </Tag>
     );
   }
   if (statusStr === 'INACTIVE' || statusStr === 'NONAKTIF' || status === false) {
     return (
       <Tag icon={<StopOutlined />} color="error" style={style}>
-        {text || 'NONAKTIF'}
+        {text || STATUS_LABELS['INACTIVE']}
       </Tag>
     );
   }
@@ -84,15 +115,15 @@ export const StatusTag: React.FC<StatusTagProps> = ({ status, category = 'generi
   if (category === 'pr') {
     switch (statusStr) {
       case 'DRAFT':
-        return <Tag color="default" style={style}>{text || 'DRAFT'}</Tag>;
+        return <Tag color="default" style={style}>{text || STATUS_LABELS['PR:DRAFT']}</Tag>;
       case 'SUBMITTED':
-        return <Tag icon={<ClockCircleOutlined />} color="processing" style={style}>{text || 'SUBMITTED'}</Tag>;
+        return <Tag icon={<ClockCircleOutlined />} color="processing" style={style}>{text || STATUS_LABELS['PR:SUBMITTED']}</Tag>;
       case 'APPROVED':
-        return <Tag icon={<CheckCircleOutlined />} color="success" style={style}>{text || 'APPROVED'}</Tag>;
+        return <Tag icon={<CheckCircleOutlined />} color="success" style={style}>{text || STATUS_LABELS['PR:APPROVED']}</Tag>;
       case 'REJECTED':
-        return <Tag icon={<CloseCircleOutlined />} color="error" style={style}>{text || 'REJECTED'}</Tag>;
+        return <Tag icon={<CloseCircleOutlined />} color="error" style={style}>{text || STATUS_LABELS['PR:REJECTED']}</Tag>;
       case 'CLOSED_PARTIAL':
-        return <Tag color="warning" style={style}>{text || 'CLOSED PARTIAL'}</Tag>;
+        return <Tag color="warning" style={style}>{text || STATUS_LABELS['PR:CLOSED_PARTIAL']}</Tag>;
       default:
         return <Tag color="default" style={style}>{text || statusStr}</Tag>;
     }
@@ -102,15 +133,15 @@ export const StatusTag: React.FC<StatusTagProps> = ({ status, category = 'generi
   if (category === 'po') {
     switch (statusStr) {
       case 'DRAFT':
-        return <Tag color="default" style={style}>{text || 'DRAFT'}</Tag>;
+        return <Tag color="default" style={style}>{text || STATUS_LABELS['PO:DRAFT']}</Tag>;
       case 'APPROVED':
-        return <Tag icon={<SyncOutlined spin />} color="processing" style={style}>{text || 'APPROVED'}</Tag>;
+        return <Tag icon={<SyncOutlined spin />} color="processing" style={style}>{text || STATUS_LABELS['PO:APPROVED']}</Tag>;
       case 'ISSUED':
-        return <Tag icon={<CheckCircleOutlined />} color="success" style={style}>{text || 'ISSUED'}</Tag>;
+        return <Tag icon={<CheckCircleOutlined />} color="success" style={style}>{text || STATUS_LABELS['PO:ISSUED']}</Tag>;
       case 'AMENDED':
-        return <Tag color="warning" style={style}>{text || 'AMENDED'}</Tag>;
+        return <Tag color="warning" style={style}>{text || STATUS_LABELS['PO:AMENDED']}</Tag>;
       case 'CANCELLED':
-        return <Tag icon={<CloseCircleOutlined />} color="error" style={style}>{text || 'CANCELLED'}</Tag>;
+        return <Tag icon={<CloseCircleOutlined />} color="error" style={style}>{text || STATUS_LABELS['PO:CANCELLED']}</Tag>;
       default:
         return <Tag color="default" style={style}>{text || statusStr}</Tag>;
     }
@@ -120,14 +151,14 @@ export const StatusTag: React.FC<StatusTagProps> = ({ status, category = 'generi
   if (category === 'invoice') {
     switch (statusStr) {
       case 'MATCHED_OK':
-        return <Tag icon={<CheckCircleOutlined />} color="success" style={style}>{text || 'MATCHED_OK'}</Tag>;
+        return <Tag icon={<CheckCircleOutlined />} color="success" style={style}>{text || STATUS_LABELS['INVOICE:MATCHED_OK']}</Tag>;
       case 'MATCHED_WITH_EXCEPTION':
-        return <Tag icon={<AlertOutlined />} color="warning" style={style}>{text || 'MATCHED_WITH_EXCEPTION'}</Tag>;
+        return <Tag icon={<AlertOutlined />} color="warning" style={style}>{text || STATUS_LABELS['INVOICE:MATCHED_WITH_EXCEPTION']}</Tag>;
       case 'EXCEPTION_OVERRIDDEN':
-        return <Tag color="purple" style={style}>{text || 'EXCEPTION_OVERRIDDEN'}</Tag>;
+        return <Tag color="purple" style={style}>{text || STATUS_LABELS['INVOICE:EXCEPTION_OVERRIDDEN']}</Tag>;
       case 'UNMATCHED':
       default:
-        return <Tag color="default" style={style}>{text || 'UNMATCHED'}</Tag>;
+        return <Tag color="default" style={style}>{text || STATUS_LABELS['INVOICE:UNMATCHED']}</Tag>;
     }
   }
 
@@ -135,13 +166,13 @@ export const StatusTag: React.FC<StatusTagProps> = ({ status, category = 'generi
   if (category === 'payment') {
     switch (statusStr) {
       case 'PROPOSED':
-        return <Tag icon={<ClockCircleOutlined />} color="processing" style={style}>{text || 'PROPOSED'}</Tag>;
+        return <Tag icon={<ClockCircleOutlined />} color="processing" style={style}>{text || STATUS_LABELS['PAYMENT:PROPOSED']}</Tag>;
       case 'CHECKED':
-        return <Tag color="warning" style={style}>{text || 'CHECKED'}</Tag>;
+        return <Tag color="warning" style={style}>{text || STATUS_LABELS['PAYMENT:CHECKED']}</Tag>;
       case 'EXECUTED':
-        return <Tag icon={<CheckCircleOutlined />} color="success" style={style}>{text || 'EXECUTED'}</Tag>;
+        return <Tag icon={<CheckCircleOutlined />} color="success" style={style}>{text || STATUS_LABELS['PAYMENT:EXECUTED']}</Tag>;
       case 'REJECTED':
-        return <Tag icon={<CloseCircleOutlined />} color="error" style={style}>{text || 'REJECTED'}</Tag>;
+        return <Tag icon={<CloseCircleOutlined />} color="error" style={style}>{text || STATUS_LABELS['PAYMENT:REJECTED']}</Tag>;
       default:
         return <Tag color="default" style={style}>{text || statusStr}</Tag>;
     }
@@ -150,9 +181,9 @@ export const StatusTag: React.FC<StatusTagProps> = ({ status, category = 'generi
   // NCR status
   if (category === 'ncr') {
     if (statusStr === 'RESOLVED' || statusStr === 'TRUE') {
-      return <Tag icon={<CheckCircleOutlined />} color="success" style={style}>{text || 'SELESAI / RESOLVED'}</Tag>;
+      return <Tag icon={<CheckCircleOutlined />} color="success" style={style}>{text || STATUS_LABELS['NCR:RESOLVED']}</Tag>;
     }
-    return <Tag icon={<AlertOutlined />} color="error" style={style}>{text || 'OPEN / INVESTIGASI'}</Tag>;
+    return <Tag icon={<AlertOutlined />} color="error" style={style}>{text || STATUS_LABELS['NCR:OPEN']}</Tag>;
   }
 
   // Default fallback mapper

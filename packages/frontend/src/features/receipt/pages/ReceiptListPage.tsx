@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { receiptApi } from '../../../api/endpoints/receipt';
 import { PageHeader } from '../../../components/common/PageHeader';
+import { formatDate } from '../../../utils/date';
 
 const { Text } = Typography;
 
@@ -44,6 +45,7 @@ export const ReceiptListPage: React.FC = () => {
       title: 'Tanggal Penerimaan',
       dataIndex: 'receivedDate',
       key: 'receivedDate',
+      render: (dateStr: string) => formatDate(dateStr),
     },
     {
       title: 'Catatan Kondisi Barang',
