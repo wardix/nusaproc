@@ -10,7 +10,8 @@ import {
   Form,
   Checkbox,
   Switch,
-  message,
+  App,
+  theme,
   Popconfirm,
   Typography,
   Card,
@@ -53,6 +54,7 @@ const ALL_ROLES: { label: string; value: AppRole; color: string }[] = (
 }));
 
 export const AdminUsersPage: React.FC = () => {
+  const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [divisionFilter, setDivisionFilter] = useState<string | undefined>(undefined);
@@ -534,7 +536,6 @@ export const AdminUsersPage: React.FC = () => {
                 type="primary"
                 htmlType="submit"
                 loading={createMutation.isPending}
-                style={{ backgroundColor: '#0052CC', borderColor: '#0052CC' }}
               >
                 Simpan & Daftarkan Pengguna
               </Button>
@@ -595,7 +596,6 @@ export const AdminUsersPage: React.FC = () => {
                 type="primary"
                 htmlType="submit"
                 loading={updateRolesMutation.isPending}
-                style={{ backgroundColor: '#0052CC', borderColor: '#0052CC' }}
               >
                 Perbarui Hak Akses
               </Button>

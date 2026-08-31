@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Typography, Grid } from 'antd';
+import { Layout, Menu, Typography, Grid, theme } from 'antd';
 import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { RoleSwitcher } from './RoleSwitcher';
@@ -13,6 +13,7 @@ const { Title } = Typography;
 const { useBreakpoint } = Grid;
 
 export const AppLayout: React.FC = () => {
+  const { token } = theme.useToken();
   const navigate = useNavigate();
   const location = useLocation();
   const screens = useBreakpoint();
@@ -60,7 +61,7 @@ export const AppLayout: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0 20px',
-          background: '#0052CC',
+          background: token.colorPrimary,
           height: 64,
           position: 'sticky',
           top: 0,

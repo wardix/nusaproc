@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Row, Col, Typography, Space, Breadcrumb } from 'antd';
+import { Card, Row, Col, Typography, Space, Breadcrumb, theme } from 'antd';
 
 const { Title, Text } = Typography;
 
@@ -22,6 +22,8 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   breadcrumbs,
   style,
 }) => {
+  const { token } = theme.useToken();
+
   return (
     <Card
       style={{
@@ -43,7 +45,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               <div
                 style={{
                   fontSize: 26,
-                  color: '#0052CC',
+                  color: token.colorPrimary,
                   display: 'flex',
                   alignItems: 'center',
                   marginTop: 2,
@@ -54,7 +56,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             )}
             <div>
               <Space align="center" wrap size={8}>
-                <Title level={4} style={{ margin: 0, fontWeight: 600, color: '#1f1f1f' }}>
+                <Title level={4} style={{ margin: 0, fontWeight: 600, color: token.colorTextHeading }}>
                   {title}
                 </Title>
                 {tags}

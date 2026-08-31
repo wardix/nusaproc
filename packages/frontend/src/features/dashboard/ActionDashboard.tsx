@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Row, Col, Typography, Tag, Table, Button, Space, Statistic } from 'antd';
+import { Card, Row, Col, Typography, Tag, Table, Button, Space, Statistic, theme } from 'antd';
 import {
   ClockCircleOutlined,
   CheckCircleOutlined,
@@ -25,6 +25,7 @@ interface ActionTask {
 }
 
 export const ActionDashboard: React.FC = () => {
+  const { token } = theme.useToken();
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const activeRole = user?.activeRole || 'REQUESTER';
@@ -124,7 +125,7 @@ export const ActionDashboard: React.FC = () => {
             <Statistic
               title="Tugas Menunggu Tindakan"
               value={tasks.length}
-              valueStyle={{ color: '#0052CC' }}
+              valueStyle={{ color: token.colorPrimary }}
               prefix={<ClockCircleOutlined />}
             />
           </Card>
@@ -134,7 +135,7 @@ export const ActionDashboard: React.FC = () => {
             <Statistic
               title="SLA Mendekati Batas (< 1 Jam)"
               value={1}
-              valueStyle={{ color: '#CF1322' }}
+              valueStyle={{ color: token.colorError }}
               prefix={<WarningOutlined />}
             />
           </Card>
@@ -144,7 +145,7 @@ export const ActionDashboard: React.FC = () => {
             <Statistic
               title="Diselesaikan Hari Ini"
               value={8}
-              valueStyle={{ color: '#389E0D' }}
+              valueStyle={{ color: token.colorSuccess }}
               prefix={<CheckCircleOutlined />}
             />
           </Card>
@@ -154,7 +155,7 @@ export const ActionDashboard: React.FC = () => {
             <Statistic
               title="Total Nilai Antrean"
               value="Rp 75 Juta"
-              valueStyle={{ color: '#1F1F1F' }}
+              valueStyle={{ color: token.colorTextHeading }}
             />
           </Card>
         </Col>

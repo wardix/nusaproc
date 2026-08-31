@@ -13,7 +13,8 @@ import {
   Space,
   Table,
   Divider,
-  message,
+  App,
+  theme,
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -46,6 +47,8 @@ interface MatcherProps {
 }
 
 export const TwoWayMatcherScreen: React.FC<MatcherProps> = ({ poData, invoiceData }) => {
+  const { message } = App.useApp();
+  const { token } = theme.useToken();
   const { user } = useAuthStore();
   const [isOverrideModalOpen, setIsOverrideModalOpen] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
@@ -140,7 +143,7 @@ export const TwoWayMatcherScreen: React.FC<MatcherProps> = ({ poData, invoiceDat
           >
             <div style={{ marginBottom: 16 }}>
               <Text type="secondary">Total Nilai PO Resmi:</Text>
-              <Title level={3} style={{ color: '#0052CC', margin: 0 }}>
+              <Title level={3} style={{ color: token.colorPrimary, margin: 0 }}>
                 {formatRupiah(poData.totalAmount)}
               </Title>
             </div>
@@ -167,7 +170,7 @@ export const TwoWayMatcherScreen: React.FC<MatcherProps> = ({ poData, invoiceDat
           >
             <div style={{ marginBottom: 16 }}>
               <Text type="secondary">Total Tagihan Vendor:</Text>
-              <Title level={3} style={{ color: '#1F1F1F', margin: 0 }}>
+              <Title level={3} style={{ color: token.colorTextHeading, margin: 0 }}>
                 {formatRupiah(invoiceData.subtotalAmount)}
               </Title>
             </div>

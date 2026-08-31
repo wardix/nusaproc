@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Button, Tag, Card, Typography } from 'antd';
+import { Table, Button, Tag, Card, Typography, theme } from 'antd';
 import { PlusOutlined, FileDoneOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +9,7 @@ import { PageHeader } from '../../../components/common/PageHeader';
 const { Text } = Typography;
 
 export const ReceiptListPage: React.FC = () => {
+  const { token } = theme.useToken();
   const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
@@ -57,7 +58,7 @@ export const ReceiptListPage: React.FC = () => {
       <PageHeader
         title="Daftar Berita Acara Serah Terima (BAST) & Penerimaan Barang"
         subtitle="Kelola penerimaan barang fisik di gudang atau serah terima jasa dari vendor rekanan (R28–R32)."
-        icon={<FileDoneOutlined style={{ color: '#0052CC' }} />}
+        icon={<FileDoneOutlined style={{ color: token.colorPrimary }} />}
         extra={
           <Button
             type="primary"
@@ -83,13 +84,16 @@ export const ReceiptListPage: React.FC = () => {
   );
 };
 
-const SpaceText: React.FC<{ text: string }> = ({ text }) => (
-  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-    <FileDoneOutlined style={{ color: '#0052CC' }} />
-    <Text strong style={{ color: '#0052CC' }}>
-      {text}
-    </Text>
-  </span>
-);
+const SpaceText: React.FC<{ text: string }> = ({ text }) => {
+  const { token } = theme.useToken();
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <FileDoneOutlined style={{ color: token.colorPrimary }} />
+      <Text strong style={{ color: token.colorPrimary }}>
+        {text}
+      </Text>
+    </span>
+  );
+};
 
 export default ReceiptListPage;

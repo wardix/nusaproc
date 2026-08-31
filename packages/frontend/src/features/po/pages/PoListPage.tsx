@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Button, Space, Card, Typography, notification } from 'antd';
+import { Table, Button, Space, Card, Typography, App, theme } from 'antd';
 import { FilePdfOutlined, CheckOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { poApi } from '../../../api/endpoints/po';
@@ -10,6 +10,8 @@ import { StatusTag } from '../../../components/common/StatusTag';
 const { Text } = Typography;
 
 export const PoListPage: React.FC = () => {
+  const { notification } = App.useApp();
+  const { token } = theme.useToken();
   const queryClient = useQueryClient();
 
   // Fetch PO detail / list using mock/seeded demo ID or list
@@ -62,7 +64,7 @@ export const PoListPage: React.FC = () => {
       title: 'Nomor PO',
       dataIndex: 'poNumber',
       key: 'poNumber',
-      render: (text: string) => <Text strong style={{ color: '#0052CC' }}>{text}</Text>,
+      render: (text: string) => <Text strong style={{ color: token.colorPrimary }}>{text}</Text>,
     },
     {
       title: 'Vendor Terpilih',
@@ -107,7 +109,7 @@ export const PoListPage: React.FC = () => {
           <Button
             size="small"
             icon={<FilePdfOutlined />}
-            style={{ color: '#CF1322', borderColor: '#CF1322' }}
+            style={{ color: token.colorError, borderColor: token.colorError }}
             onClick={() => handleDownloadPdf(record.id, record.poNumber)}
           >
             Unduh PDF (R27)
@@ -122,7 +124,7 @@ export const PoListPage: React.FC = () => {
       <PageHeader
         title="Katalog Surat Pesanan (Purchase Order)"
         subtitle="Daftar pemesanan resmi kepada vendor terverifikasi dengan proteksi penerbitan dan unduhan PDF resmi (R24–R27)."
-        icon={<FileTextOutlined style={{ color: '#0052CC' }} />}
+        icon={<FileTextOutlined style={{ color: token.colorPrimary }} />}
       />
 
       <Card>

@@ -11,7 +11,8 @@ import {
   Input,
   Select,
   Switch,
-  message,
+  App,
+  theme,
   Tabs,
   Row,
   Col,
@@ -43,6 +44,7 @@ import { StatusTag } from '../../../components/common/StatusTag';
 const { Text, Paragraph } = Typography;
 
 export const AdminOrganizationPage: React.FC = () => {
+  const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'branches' | 'divisions'>('branches');
 
@@ -405,7 +407,6 @@ export const AdminOrganizationPage: React.FC = () => {
                         type="primary"
                         icon={<PlusOutlined />}
                         onClick={() => setIsCreateBranchModalOpen(true)}
-                        style={{ background: '#0052CC' }}
                       >
                         Tambah Kantor Cabang
                       </Button>
@@ -460,7 +461,6 @@ export const AdminOrganizationPage: React.FC = () => {
                         type="primary"
                         icon={<PlusOutlined />}
                         onClick={() => setIsCreateDivisionModalOpen(true)}
-                        style={{ background: '#0052CC' }}
                       >
                         Tambah Divisi
                       </Button>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Tag, Card, Typography, Row, Col, Input, Select, Space, Badge } from 'antd';
+import { Table, Tag, Card, Typography, Row, Col, Input, Select, Space, Badge, theme } from 'antd';
 import { WarningOutlined, SearchOutlined, AuditOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { receiptApi } from '../../../api/endpoints/receipt';
@@ -22,6 +22,7 @@ export interface NcrItem {
 }
 
 export const NcrListPage: React.FC = () => {
+  const { token } = theme.useToken();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
 
@@ -50,8 +51,8 @@ export const NcrListPage: React.FC = () => {
       key: 'ncrNumber',
       render: (ncrNumber: string) => (
         <Space>
-          <WarningOutlined style={{ color: '#FA541C', fontSize: 16 }} />
-          <Text strong style={{ color: '#D4380D' }}>
+          <WarningOutlined style={{ color: token.colorWarning, fontSize: 16 }} />
+          <Text strong style={{ color: token.colorWarning }}>
             {ncrNumber}
           </Text>
         </Space>
@@ -94,7 +95,7 @@ export const NcrListPage: React.FC = () => {
       key: 'actionRequired',
       ellipsis: true,
       render: (action: string) => (
-        <Text style={{ color: '#595959', fontSize: 13 }}>
+        <Text style={{ color: token.colorTextSecondary, fontSize: 13 }}>
           {action}
         </Text>
       ),
@@ -124,7 +125,7 @@ export const NcrListPage: React.FC = () => {
       <PageHeader
         title="Laporan Ketidaksesuaian Barang / Non-Conformance Reports (NCR) (R30, US5)"
         subtitle="Daftar insiden barang rusak, ditolak, atau tidak sesuai spesifikasi yang dicatat saat penerimaan BAST oleh Gudang / Pemohon."
-        icon={<AuditOutlined style={{ color: '#D48806' }} />}
+        icon={<AuditOutlined style={{ color: token.colorWarning }} />}
         extra={
           <Badge count={openCount} overflowCount={99}>
             <Tag color="warning" style={{ padding: '4px 12px', fontSize: 13 }}>
@@ -134,7 +135,7 @@ export const NcrListPage: React.FC = () => {
         }
       />
 
-      <Card style={{ marginBottom: 24 }}>
+      <Card>
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} md={8}>
             <Input

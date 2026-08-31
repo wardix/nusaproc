@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dropdown, Space, Avatar, Tag, Typography, type MenuProps } from 'antd';
+import { Dropdown, Space, Avatar, Tag, Typography, type MenuProps, theme } from 'antd';
 import { UserOutlined, DownOutlined, CheckOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -10,6 +10,7 @@ import { ROLE_COLORS, ROLE_LABELS } from '../common/StatusTag';
 const { Text } = Typography;
 
 export const RoleSwitcher: React.FC = () => {
+  const { token } = theme.useToken();
   const navigate = useNavigate();
   const { user, setActiveRole, setToken, logout } = useAuthStore();
 
@@ -41,7 +42,7 @@ export const RoleSwitcher: React.FC = () => {
           <Tag color={ROLE_COLORS[role]}>{role}</Tag>
           <Text style={{ fontSize: 13 }}>{ROLE_LABELS[role] || role}</Text>
         </Space>
-        {role === activeRole && <CheckOutlined style={{ color: '#0052CC' }} />}
+        {role === activeRole && <CheckOutlined style={{ color: token.colorPrimary }} />}
       </Space>
     ),
     onClick: () => handleRoleSelect(role),
@@ -92,7 +93,7 @@ export const RoleSwitcher: React.FC = () => {
           transition: 'background 0.2s',
         }}
       >
-        <Avatar size="small" icon={<UserOutlined />} style={{ background: '#fff', color: '#0052CC' }} />
+        <Avatar size="small" icon={<UserOutlined />} style={{ background: '#fff', color: token.colorPrimary }} />
         <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
           <Text style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>
             {user?.fullName || 'Pengguna NusaProc'}

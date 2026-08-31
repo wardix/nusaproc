@@ -12,7 +12,8 @@ import {
   Image,
   Typography,
   Descriptions,
-  message,
+  App,
+  theme,
   type TableProps,
 } from 'antd';
 import {
@@ -24,6 +25,7 @@ import {
   BulbOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons';
+import { PageHeader } from '../../../components/common/PageHeader';
 import {
   feedbackApi,
   type FeedbackItem,
@@ -56,6 +58,8 @@ const STATUS_TAGS: Record<FeedbackStatus, { color: string; label: string }> = {
 };
 
 export const AdminFeedbackPage: React.FC = () => {
+  const { message } = App.useApp();
+  const { token } = theme.useToken();
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -258,17 +262,18 @@ export const AdminFeedbackPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '4px 0' }}>
-      <div style={{ marginBottom: 20 }}>
-        <Title level={3} style={{ marginBottom: 4 }}>
-          Pusat Masukan & Laporan Kendala (Feedback & Bug Reports)
-        </Title>
-        <Text type="secondary">
-          Kelola tiket masukan, laporan kendala teknis, dan usulan fitur dari pengguna aplikasi NusaProc.
-        </Text>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <PageHeader
+        title="Pusat Masukan & Laporan Kendala"
+        subtitle="Kelola tiket masukan, laporan kendala teknis, dan usulan fitur dari pengguna aplikasi NusaProc."
+        icon={<CommentOutlined style={{ color: token.colorPrimary }} />}
+        breadcrumbs={[
+          { title: 'Admin' },
+          { title: 'Masukan & Kendala' },
+        ]}
+      />
 
-      <Card style={{ marginBottom: 20 }}>
+      <Card>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <Space wrap>
             <Input
@@ -312,7 +317,7 @@ export const AdminFeedbackPage: React.FC = () => {
               <Select.Option value="CLOSED">Ditutup (Closed)</Select.Option>
             </Select>
 
-            <Button type="primary" onClick={handleSearch} style={{ background: '#0052CC', borderColor: '#0052CC' }}>
+            <Button type="primary" onClick={handleSearch}>
               Filter
             </Button>
           </Space>
@@ -347,7 +352,7 @@ export const AdminFeedbackPage: React.FC = () => {
       <Modal
         title={
           <Space>
-            <CommentOutlined style={{ color: '#0052CC' }} />
+            <CommentOutlined style={{ color: token.colorPrimary }} />
             <span>Detail Masukan & Laporan Pengguna</span>
           </Space>
         }
@@ -482,7 +487,6 @@ export const AdminFeedbackPage: React.FC = () => {
                       htmlType="submit"
                       icon={<CheckCircleOutlined />}
                       loading={isUpdating}
-                      style={{ background: '#0052CC', borderColor: '#0052CC' }}
                     >
                       Simpan Perubahan
                     </Button>
