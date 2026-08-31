@@ -122,5 +122,6 @@ describe('Epic 20: [Feedback & Bug Report] Browser Screenshot & User Feedback', 
 
   afterAll(async () => {
     await sql`TRUNCATE TABLE system_feedback CASCADE;`;
+    await sql`DELETE FROM app_user WHERE employee_id = 'EMP-FB-01';`;
   });
 });
