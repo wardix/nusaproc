@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { createApp } from '../../../src/index';
 import { generateAuthToken } from '../../../src/domain/auth/token';
 import { runMigrations } from '../../../src/db/migrate';
@@ -118,5 +118,9 @@ describe('Epic 20: [Feedback & Bug Report] Browser Screenshot & User Feedback', 
     expect(body.success).toBe(true);
     expect(body.data.status).toBe('IN_PROGRESS');
     expect(body.data.adminNotes).toBe('Sedang diinvestigasi oleh tim frontend.');
+  });
+
+  afterAll(async () => {
+    await sql`TRUNCATE TABLE system_feedback CASCADE;`;
   });
 });
