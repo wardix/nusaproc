@@ -5,6 +5,7 @@ import { sql } from '../../src/db/client';
 describe('Database Test Harness: runTestInRollback', () => {
   beforeAll(async () => {
     // Create test table
+    await sql`DROP TABLE IF EXISTS harness_test_items`;
     await sql`
       CREATE TABLE IF NOT EXISTS harness_test_items (
         id VARCHAR(64) PRIMARY KEY,

@@ -4,8 +4,9 @@ import { PlusOutlined, FileDoneOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { receiptApi } from '../../../api/endpoints/receipt';
+import { PageHeader } from '../../../components/common/PageHeader';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const ReceiptListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -52,31 +53,33 @@ export const ReceiptListPage: React.FC = () => {
   ];
 
   return (
-    <Card
-      title={
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title level={4} style={{ margin: 0 }}>
-            Daftar Berita Acara Serah Terima (BAST) & Penerimaan Barang
-          </Title>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <PageHeader
+        title="Daftar Berita Acara Serah Terima (BAST) & Penerimaan Barang"
+        subtitle="Kelola penerimaan barang fisik di gudang atau serah terima jasa dari vendor rekanan (R28–R32)."
+        icon={<FileDoneOutlined style={{ color: '#0052CC' }} />}
+        extra={
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => navigate('/receipts/create')}
-            style={{ background: '#0052CC' }}
           >
             Penerimaan Barang (BAST)
           </Button>
-        </div>
-      }
-    >
-      <Table
-        columns={columns}
-        dataSource={receipts}
-        rowKey="id"
-        loading={isLoading}
-        pagination={{ pageSize: 10 }}
+        }
       />
-    </Card>
+
+      <Card>
+        <Table
+          columns={columns}
+          dataSource={receipts}
+          rowKey="id"
+          loading={isLoading}
+          scroll={{ x: 750 }}
+          pagination={{ pageSize: 10 }}
+        />
+      </Card>
+    </div>
   );
 };
 

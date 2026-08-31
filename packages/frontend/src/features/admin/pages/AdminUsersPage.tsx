@@ -39,18 +39,18 @@ import {
   type CreateUserPayload,
 } from '../../../api';
 import type { AppRole } from '@nusaproc/shared';
+import { PageHeader } from '../../../components/common/PageHeader';
+import { RoleTag, StatusTag, ROLE_COLORS, ROLE_LABELS } from '../../../components/common/StatusTag';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
-const ALL_ROLES: { label: string; value: AppRole; color: string }[] = [
-  { label: 'Requester (Pemohon PR)', value: 'REQUESTER', color: 'blue' },
-  { label: 'Approver (Penyetuju PR/PO)', value: 'APPROVER', color: 'cyan' },
-  { label: 'Account Payable (AP Staff/Head)', value: 'ACCOUNT_PAYABLE', color: 'orange' },
-  { label: 'Warehouse (Penerima Barang)', value: 'WAREHOUSE', color: 'green' },
-  { label: 'Finance (Treasury Executor)', value: 'FINANCE', color: 'gold' },
-  { label: 'Auditor (Audit Trail Read-Only)', value: 'AUDITOR', color: 'volcano' },
-  { label: 'Admin (Administrator Sistem)', value: 'ADMIN', color: 'purple' },
-];
+const ALL_ROLES: { label: string; value: AppRole; color: string }[] = (
+  ['REQUESTER', 'APPROVER', 'ACCOUNT_PAYABLE', 'WAREHOUSE', 'FINANCE', 'AUDITOR', 'ADMIN'] as AppRole[]
+).map((r) => ({
+  value: r,
+  label: ROLE_LABELS[r] || r,
+  color: ROLE_COLORS[r] || 'blue',
+}));
 
 export const AdminUsersPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -250,19 +250,9 @@ export const AdminUsersPage: React.FC = () => {
       key: 'roles',
       render: (_: unknown, record: UserItem) => (
         <Space wrap size={[2, 4]}>
-          {record.roles.map((r) => {
-            const roleMeta = ALL_ROLES.find((m) => m.value === r.role);
-            return (
-              <Tag key={r.role} color={roleMeta?.color || 'blue'}>
-                {r.role}
-                {r.isTaxSpecialist && (
-                  <Tag color="magenta" style={{ marginLeft: 4, marginRight: 0, fontSize: 10 }}>
-                    PPN Specialist
-                  </Tag>
-                )}
-              </Tag>
-            );
-          })}
+          {record.roles.map((r) => (
+            <RoleTag key={r.role} role={r.role} isTaxSpecialist={r.isTaxSpecialist} />
+          ))}
         </Space>
       ),
     },
@@ -284,17 +274,9 @@ export const AdminUsersPage: React.FC = () => {
     },
     {
       title: 'Status',
+      dataIndex: 'isActive',
       key: 'status',
-      render: (_: unknown, record: UserItem) =>
-        record.isActive ? (
-          <Tag icon={<CheckCircleOutlined />} color="success">
-            AKTIF
-          </Tag>
-        ) : (
-          <Tag icon={<StopOutlined />} color="error">
-            NONAKTIF
-          </Tag>
-        ),
+      render: (isActive: boolean) => <StatusTag status={isActive} />,
     },
     {
       title: 'Aksi',
@@ -342,37 +324,23 @@ export const AdminUsersPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Card style={{ marginBottom: 24 }}>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Space align="center" size="middle">
-              <TeamOutlined style={{ fontSize: 28, color: '#0052CC' }} />
-              <div>
-                <Title level={4} style={{ margin: 0 }}>
-                  Manajemen Pengguna & Hak Akses (US12)
-                </Title>
-                <Text type="secondary">
-                  Kelola akun karyawan, hak akses multi-peran (RBAC), dan status aktifasi pengguna PT Nusanet.
-                </Text>
-              </div>
-            </Space>
-          </Col>
-          <Col>
-            <Button
-              type="primary"
-              icon={<UserAddOutlined />}
-              size="large"
-              style={{ backgroundColor: '#0052CC', borderColor: '#0052CC' }}
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              Tambah Pengguna Baru
-            </Button>
-          </Col>
-        </Row>
-      </Card>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <PageHeader
+        title="Manajemen Pengguna & Hak Akses (US12)"
+        subtitle="Kelola akun karyawan, hak akses multi-peran (RBAC), dan status aktifasi pengguna PT Nusanet."
+        icon={<TeamOutlined />}
+        extra={
+          <Button
+            type="primary"
+            icon={<UserAddOutlined />}
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            Tambah Pengguna Baru
+          </Button>
+        }
+      />
 
-      <Card style={{ marginBottom: 24 }}>
+      <Card>
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} md={6}>
             <Input

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Table, Tag, Card, Typography, Row, Col, Input, Select, Space, Badge } from 'antd';
-import { WarningOutlined, CheckCircleOutlined, AlertOutlined, SearchOutlined, AuditOutlined } from '@ant-design/icons';
+import { WarningOutlined, SearchOutlined, AuditOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { receiptApi } from '../../../api/endpoints/receipt';
+import { PageHeader } from '../../../components/common/PageHeader';
+import { StatusTag } from '../../../components/common/StatusTag';
 
-const { Title, Text, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
 
 export interface NcrItem {
   id: string;
@@ -101,16 +103,7 @@ export const NcrListPage: React.FC = () => {
       title: 'Status Tiket',
       dataIndex: 'isResolved',
       key: 'isResolved',
-      render: (resolved: boolean) =>
-        resolved ? (
-          <Tag color="success" icon={<CheckCircleOutlined />}>
-            SELESAI / RESOLVED
-          </Tag>
-        ) : (
-          <Tag color="error" icon={<AlertOutlined />}>
-            OPEN / INVESTIGASI
-          </Tag>
-        ),
+      render: (resolved: boolean) => <StatusTag status={resolved} category="ncr" />,
     },
     {
       title: 'Tanggal Pencatatan',
@@ -124,35 +117,22 @@ export const NcrListPage: React.FC = () => {
     },
   ];
 
+  const openCount = rawNcrs.filter((n) => !n.isResolved).length;
+
   return (
-    <div style={{ padding: '0px' }}>
-      <Card style={{ marginBottom: 24 }}>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Space align="center" size="middle">
-              <AuditOutlined style={{ fontSize: 28, color: '#FA541C' }} />
-              <div>
-                <Title level={4} style={{ margin: 0 }}>
-                  Laporan Ketidaksesuaian Barang / Non-Conformance Reports (NCR) (R30, US5)
-                </Title>
-                <Text type="secondary">
-                  Daftar insiden barang rusak, ditolak, atau tidak sesuai spesifikasi yang dicatat saat penerimaan BAST oleh Gudang / Pemohon.
-                </Text>
-              </div>
-            </Space>
-          </Col>
-          <Col>
-            <Badge
-              count={rawNcrs.filter((n) => !n.isResolved).length}
-              overflowCount={99}
-            >
-              <Tag color="volcano" style={{ padding: '4px 12px', fontSize: 13 }}>
-                Tiket Open: {rawNcrs.filter((n) => !n.isResolved).length}
-              </Tag>
-            </Badge>
-          </Col>
-        </Row>
-      </Card>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <PageHeader
+        title="Laporan Ketidaksesuaian Barang / Non-Conformance Reports (NCR) (R30, US5)"
+        subtitle="Daftar insiden barang rusak, ditolak, atau tidak sesuai spesifikasi yang dicatat saat penerimaan BAST oleh Gudang / Pemohon."
+        icon={<AuditOutlined style={{ color: '#D48806' }} />}
+        extra={
+          <Badge count={openCount} overflowCount={99}>
+            <Tag color="warning" style={{ padding: '4px 12px', fontSize: 13 }}>
+              Tiket Open: {openCount}
+            </Tag>
+          </Badge>
+        }
+      />
 
       <Card style={{ marginBottom: 24 }}>
         <Row gutter={[16, 16]}>

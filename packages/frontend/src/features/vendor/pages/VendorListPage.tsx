@@ -25,8 +25,10 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import { vendorApi, type CreateVendorPayload, type CreateBankAccountPayload } from '../../../api/endpoints/vendor';
 import { useAuthStore } from '../../../stores/useAuthStore';
+import { PageHeader } from '../../../components/common/PageHeader';
+import { StatusTag } from '../../../components/common/StatusTag';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export interface VendorDisplayItem {
   id: string;
@@ -280,15 +282,7 @@ export const VendorListPage: React.FC = () => {
       title: 'Status Vendor',
       dataIndex: 'status',
       key: 'status',
-      render: (st: string) => {
-        const colorMap: Record<string, string> = {
-          APPROVED: 'success',
-          PROSPECTIVE: 'processing',
-          SUSPENDED: 'warning',
-          BLACKLISTED: 'error',
-        };
-        return <Tag color={colorMap[st] || 'default'}>{st}</Tag>;
-      },
+      render: (st: string) => <StatusTag status={st} />,
     },
     {
       title: 'Rekening Bank Terdaftar & Verifikasi 4-Eyes (R17, R18)',
@@ -370,32 +364,20 @@ export const VendorListPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <Card>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Space align="center" size="middle">
-              <ShopOutlined style={{ fontSize: 28, color: '#0052CC' }} />
-              <div>
-                <Title level={4} style={{ margin: 0 }}>
-                  Master Vendor & Rekening Bank (4-Eyes Principle R17–R19)
-                </Title>
-                <Text type="secondary">
-                  Katalog vendor resmi, status PKP, dan kepatuhan verifikasi rekening ganda (4-Eyes Principle) untuk mencegah *Fraudulent Bank Modification*.
-                </Text>
-              </div>
-            </Space>
-          </Col>
-          <Col>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setIsCreateVendorOpen(true)}
-            >
-              Tambah Vendor Baru
-            </Button>
-          </Col>
-        </Row>
-      </Card>
+      <PageHeader
+        title="Master Vendor & Rekening Bank (4-Eyes Principle R17–R19)"
+        subtitle="Katalog vendor resmi, status PKP, dan kepatuhan verifikasi rekening ganda (4-Eyes Principle) untuk mencegah Fraudulent Bank Modification."
+        icon={<ShopOutlined style={{ color: '#0052CC' }} />}
+        extra={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setIsCreateVendorOpen(true)}
+          >
+            Tambah Vendor Baru
+          </Button>
+        }
+      />
 
       <Card>
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>

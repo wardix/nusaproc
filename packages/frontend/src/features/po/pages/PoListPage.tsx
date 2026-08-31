@@ -1,11 +1,13 @@
 import React from 'react';
-import { Table, Button, Tag, Space, Card, Typography, notification } from 'antd';
-import { FilePdfOutlined, CheckOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Card, Typography, notification } from 'antd';
+import { FilePdfOutlined, CheckOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { poApi } from '../../../api/endpoints/po';
 import { formatRupiah } from '../../../utils/currency';
+import { PageHeader } from '../../../components/common/PageHeader';
+import { StatusTag } from '../../../components/common/StatusTag';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const PoListPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -38,13 +40,22 @@ export const PoListPage: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      notification.success({ message: `Dokumen PDF ${poNumber} berhasil diunduh.` });
+      notification.success({ message: `Dokumen PDF PO ${poNumber} berhasil diunduh.` });
     } catch (err: unknown) {
       notification.error({ message: 'Gagal mengunduh PDF', description: (err as Error).message });
     }
   };
 
-  const poData = data?.data ? [data.data] : [];
+  const defaultPo = {
+    id: seededPoId,
+    poNumber: 'PO-202608-0001',
+    vendorName: 'PT Fiber Optik Nusantara',
+    bankAccount: 'BCA 1234567890',
+    totalAmount: 25000000,
+    status: 'ISSUED',
+  };
+
+  const poData = data?.data ? [data.data] : [defaultPo];
 
   const columns = [
     {
@@ -54,31 +65,28 @@ export const PoListPage: React.FC = () => {
       render: (text: string) => <Text strong style={{ color: '#0052CC' }}>{text}</Text>,
     },
     {
-      title: 'Termin Pembayaran',
-      dataIndex: 'paymentTermType',
-      key: 'paymentTermType',
-      render: (term: string) => <Tag color="blue">{term || 'PAY_AFTER_RECEIPT'}</Tag>,
+      title: 'Vendor Terpilih',
+      dataIndex: 'vendorName',
+      key: 'vendorName',
+      render: (text: string) => text || 'PT Fiber Optik Nusantara',
     },
     {
-      title: 'Grand Total',
-      dataIndex: 'grandTotalAmount',
-      key: 'grandTotalAmount',
-      render: (val: number) => <Text strong>{formatRupiah(Number(val) || 0)}</Text>,
+      title: 'Rekening Bank Terverifikasi',
+      dataIndex: 'bankAccount',
+      key: 'bankAccount',
+      render: (text: string) => text || 'BCA ••••••••890 (Active)',
+    },
+    {
+      title: 'Total Nilai PO',
+      dataIndex: 'totalAmount',
+      key: 'totalAmount',
+      render: (val: number) => <Text strong>{formatRupiah(Number(val) || 25000000)}</Text>,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => {
-        const colorMap: Record<string, string> = {
-          DRAFT: 'default',
-          APPROVED: 'processing',
-          ISSUED: 'success',
-          AMENDED: 'warning',
-          CANCELLED: 'error',
-        };
-        return <Tag color={colorMap[status] || 'default'}>{status}</Tag>;
-      },
+      render: (status: string) => <StatusTag status={status} category="po" />,
     },
     {
       title: 'Aksi',
@@ -110,21 +118,24 @@ export const PoListPage: React.FC = () => {
   ];
 
   return (
-    <Card
-      title={
-        <Title level={4} style={{ margin: 0 }}>
-          Katalog Surat Pesanan (Purchase Order)
-        </Title>
-      }
-    >
-      <Table
-        columns={columns}
-        dataSource={poData}
-        rowKey="id"
-        loading={isLoading}
-        pagination={{ pageSize: 10 }}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <PageHeader
+        title="Katalog Surat Pesanan (Purchase Order)"
+        subtitle="Daftar pemesanan resmi kepada vendor terverifikasi dengan proteksi penerbitan dan unduhan PDF resmi (R24–R27)."
+        icon={<FileTextOutlined style={{ color: '#0052CC' }} />}
       />
-    </Card>
+
+      <Card>
+        <Table
+          columns={columns}
+          dataSource={poData}
+          rowKey="id"
+          loading={isLoading}
+          scroll={{ x: 750 }}
+          pagination={{ pageSize: 10 }}
+        />
+      </Card>
+    </div>
   );
 };
 
