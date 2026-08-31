@@ -3,8 +3,9 @@ import { Card, Typography, Alert, Button, Space, notification } from 'antd';
 import { DownloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { auditApi } from '../../../api/endpoints/audit';
+import { PageHeader } from '../../../components/common/PageHeader';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 
 export const AuditLogPage: React.FC = () => {
   const { data: integrityData, isLoading } = useQuery({
@@ -34,26 +35,20 @@ export const AuditLogPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          <div>
-            <Title level={4} style={{ margin: 0 }}>
-              Audit Trail & Kepatuhan Kriptografis (R51–R55)
-            </Title>
-            <Text type="secondary">
-              Pemeriksaan integritas berantai SHA-256 append-only (WORM) dan ekspor bundel pembuktian hukum.
-            </Text>
-          </div>
+      <PageHeader
+        title="Audit Trail & Kepatuhan Kriptografis (R51–R55)"
+        subtitle="Pemeriksaan integritas berantai SHA-256 append-only (WORM) dan ekspor bundel pembuktian hukum."
+        icon={<SafetyCertificateOutlined style={{ color: '#0052CC' }} />}
+        extra={
           <Button
             type="primary"
             icon={<DownloadOutlined />}
-            style={{ background: '#0052CC' }}
             onClick={handleDownloadBundle}
           >
             Unduh Bundel Bukti (ZIP) (R55)
           </Button>
-        </div>
-      </Card>
+        }
+      />
 
       <Card loading={isLoading}>
         <Space direction="vertical" style={{ width: '100%' }} size="middle">

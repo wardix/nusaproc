@@ -70,9 +70,9 @@ export const PaymentWorkflowSteps: React.FC<PaymentWorkflowStepsProps> = ({
   ];
 
   return (
-    <Card title="Alur Persetujuan Pembayaran 3-Tahap (Maker-Checker-Executor - R42)">
-      <Steps current={currentStep} items={stepItems} />
-    </Card>
+    <div style={{ padding: '8px 0' }}>
+      <Steps current={currentStep} items={stepItems} responsive />
+    </div>
   );
 };
 

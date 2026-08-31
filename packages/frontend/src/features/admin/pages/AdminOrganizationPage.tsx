@@ -37,8 +37,10 @@ import {
   type CreateDivisionPayload,
   type UpdateDivisionPayload,
 } from '../../../api';
+import { PageHeader } from '../../../components/common/PageHeader';
+import { StatusTag } from '../../../components/common/StatusTag';
 
-const { Title, Text, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
 
 export const AdminOrganizationPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -230,16 +232,7 @@ export const AdminOrganizationPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'isActive',
       key: 'isActive',
-      render: (isActive: boolean) =>
-        isActive ? (
-          <Tag icon={<CheckCircleOutlined />} color="success">
-            AKTIF
-          </Tag>
-        ) : (
-          <Tag icon={<StopOutlined />} color="error">
-            NONAKTIF
-          </Tag>
-        ),
+      render: (isActive: boolean) => <StatusTag status={isActive} />,
     },
     {
       title: 'Aksi',
@@ -316,16 +309,7 @@ export const AdminOrganizationPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'isActive',
       key: 'isActive',
-      render: (isActive: boolean) =>
-        isActive ? (
-          <Tag icon={<CheckCircleOutlined />} color="success">
-            AKTIF
-          </Tag>
-        ) : (
-          <Tag icon={<StopOutlined />} color="error">
-            NONAKTIF
-          </Tag>
-        ),
+      render: (isActive: boolean) => <StatusTag status={isActive} />,
     },
     {
       title: 'Aksi',
@@ -370,25 +354,12 @@ export const AdminOrganizationPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '0px' }}>
-      {/* Top Banner */}
-      <Card style={{ marginBottom: 24 }}>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Space align="center" size="middle">
-              <BankOutlined style={{ fontSize: 28, color: '#0052CC' }} />
-              <div>
-                <Title level={4} style={{ margin: 0 }}>
-                  Manajemen Master Data Organisasi (Kantor Cabang & Divisi)
-                </Title>
-                <Text type="secondary">
-                  Kelola struktur kantor cabang dan divisi internal PT Nusanet secara terpusat untuk alur pengadaan & hak akses.
-                </Text>
-              </div>
-            </Space>
-          </Col>
-        </Row>
-      </Card>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <PageHeader
+        title="Manajemen Master Data Organisasi (Kantor Cabang & Divisi)"
+        subtitle="Kelola struktur kantor cabang dan divisi internal PT Nusanet secara terpusat untuk alur pengadaan & hak akses."
+        icon={<BankOutlined />}
+      />
 
       {/* Main Tabs */}
       <Card>

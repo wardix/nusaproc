@@ -5,6 +5,8 @@ import { useAuthStore } from '../../stores/useAuthStore';
 import { RoleSwitcher } from './RoleSwitcher';
 import { getNavigationMenuItemsForRole } from './navigation';
 import { FeedbackWidget } from '../feedback/FeedbackWidget';
+import { ErrorBoundary } from '../common/ErrorBoundary';
+import { AuditorWatermark } from '../security/AuditorWatermark';
 
 const { Header, Content, Sider } = Layout;
 const { Title } = Typography;
@@ -110,7 +112,11 @@ export const AppLayout: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
             }}
           >
-            <Outlet />
+            <AuditorWatermark>
+              <ErrorBoundary>
+                <Outlet />
+              </ErrorBoundary>
+            </AuditorWatermark>
           </Content>
         </Layout>
       </Layout>

@@ -8,8 +8,10 @@ import {
 } from '@ant-design/icons';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useNavigate } from 'react-router-dom';
+import { PageHeader } from '../../components/common/PageHeader';
+import { RoleTag } from '../../components/common/StatusTag';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface ActionTask {
   id: string;
@@ -109,15 +111,12 @@ export const ActionDashboard: React.FC = () => {
   ];
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <div>
-        <Title level={3} style={{ marginBottom: 4 }}>
-          Dashboard Aksi — {user?.fullName || 'Pengguna'}
-        </Title>
-        <Text type="secondary">
-          Peran Aktif: <Tag color="blue">{activeRole}</Tag> | Fokus pada antrean tugas yang memerlukan aksi segera (R56).
-        </Text>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <PageHeader
+        title={`Dashboard Aksi — ${user?.fullName || 'Pengguna'}`}
+        subtitle="Fokus pada antrean tugas yang memerlukan aksi segera (R56)."
+        tags={<RoleTag role={activeRole} />}
+      />
 
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} lg={6}>
@@ -170,7 +169,7 @@ export const ActionDashboard: React.FC = () => {
           scroll={{ x: 600 }}
         />
       </Card>
-    </Space>
+    </div>
   );
 };
 

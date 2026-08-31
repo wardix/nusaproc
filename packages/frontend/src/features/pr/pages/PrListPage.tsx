@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Table, Button, Tag, Space, Card, Typography, Modal, Input, notification } from 'antd';
-import { PlusOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { prApi } from '../../../api/endpoints/pr';
 import { formatRupiah } from '../../../utils/currency';
 import { useAuthStore } from '../../../stores/useAuthStore';
+import { PageHeader } from '../../../components/common/PageHeader';
+import { StatusTag } from '../../../components/common/StatusTag';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const PrListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -93,16 +95,7 @@ export const PrListPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => {
-        const colorMap: Record<string, string> = {
-          DRAFT: 'default',
-          SUBMITTED: 'processing',
-          APPROVED: 'success',
-          REJECTED: 'error',
-          CLOSED_PARTIAL: 'warning',
-        };
-        return <Tag color={colorMap[status] || 'default'}>{status}</Tag>;
-      },
+      render: (status: string) => <StatusTag status={status} category="pr" />,
     },
     {
       title: 'Aksi',
@@ -126,7 +119,6 @@ export const PrListPage: React.FC = () => {
                 type="primary"
                 size="small"
                 icon={<CheckCircleOutlined />}
-                style={{ background: '#389E0D', borderColor: '#389E0D' }}
                 loading={decideMutation.isPending}
                 onClick={() => decideMutation.mutate({ id: record.id, decision: 'APPROVED' })}
               >
@@ -151,29 +143,29 @@ export const PrListPage: React.FC = () => {
   ];
 
   return (
-    <div>
-      <Card
-        title={
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Title level={4} style={{ margin: 0 }}>
-              Daftar Permintaan Pembelian (Purchase Request)
-            </Title>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => navigate('/pr/create')}
-              style={{ background: '#0052CC' }}
-            >
-              Buat PR Baru
-            </Button>
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <PageHeader
+        title="Daftar Permintaan Pembelian (Purchase Request)"
+        subtitle="Kelola dan pantau seluruh pengajuan pengadaan barang/jasa dari unit kerja."
+        icon={<ShoppingCartOutlined style={{ color: '#0052CC' }} />}
+        extra={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/pr/create')}
+          >
+            Buat PR Baru
+          </Button>
         }
-      >
+      />
+
+      <Card>
         <Table
           columns={columns}
           dataSource={prList}
           rowKey="id"
           loading={isLoading}
+          scroll={{ x: 800 }}
           pagination={{ pageSize: 10 }}
         />
       </Card>

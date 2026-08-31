@@ -1,13 +1,15 @@
 import React from 'react';
-import { Table, Button, Tag, Space, Card, Typography, notification } from 'antd';
-import { CheckOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Card, Typography, notification } from 'antd';
+import { CheckOutlined, ThunderboltOutlined, DollarCircleOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { paymentApi } from '../../../api/endpoints/payment';
 import { formatRupiah } from '../../../utils/currency';
 import { PaymentWorkflowSteps } from '../components/PaymentWorkflowSteps';
 import { useReauthStore } from '../../../stores/useReauthStore';
+import { PageHeader } from '../../../components/common/PageHeader';
+import { StatusTag } from '../../../components/common/StatusTag';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const PaymentListPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -64,30 +66,28 @@ export const PaymentListPage: React.FC = () => {
       render: (text: string) => <Text strong style={{ color: '#0052CC' }}>{text}</Text>,
     },
     {
-      title: 'Metode Pembayaran',
-      dataIndex: 'paymentMethod',
-      key: 'paymentMethod',
-      render: (method: string) => <Tag color="blue">{method || 'BANK_TRANSFER'}</Tag>,
+      title: 'Vendor Penerima',
+      dataIndex: 'vendorName',
+      key: 'vendorName',
+      render: (name: string) => name || 'PT Fiber Optik Nusantara',
     },
     {
-      title: 'Total Pembayaran',
-      dataIndex: 'totalPaymentAmount',
-      key: 'totalPaymentAmount',
+      title: 'Rekening Tujuan',
+      dataIndex: 'targetBankAccount',
+      key: 'targetBankAccount',
+      render: (acc: string) => acc || 'BCA ••••••••890',
+    },
+    {
+      title: 'Nominal Transfer',
+      dataIndex: 'paymentAmount',
+      key: 'paymentAmount',
       render: (val: number) => <Text strong>{formatRupiah(Number(val) || 0)}</Text>,
     },
     {
-      title: 'Status',
+      title: 'Status Proposal',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => {
-        const colorMap: Record<string, string> = {
-          PROPOSED: 'processing',
-          CHECKED: 'warning',
-          EXECUTED: 'success',
-          REJECTED: 'error',
-        };
-        return <Tag color={colorMap[status] || 'default'}>{status}</Tag>;
-      },
+      render: (status: string) => <StatusTag status={status} category="payment" />,
     },
     {
       title: 'Aksi',
@@ -125,6 +125,12 @@ export const PaymentListPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <PageHeader
+        title="Daftar Proposal Pembayaran (Maker-Checker-Executor R41–R45)"
+        subtitle="Alur persetujuan pencairan dana terpisah (SoD) dan proteksi eksekusi transfer dengan Re-autentikasi (R43)."
+        icon={<DollarCircleOutlined style={{ color: '#0052CC' }} />}
+      />
+
       <Card title="Alur Persetujuan Pembayaran (Maker-Checker-Executor R42)">
         <PaymentWorkflowSteps
           status={proposals[0]?.status || 'PROPOSED'}
@@ -134,18 +140,13 @@ export const PaymentListPage: React.FC = () => {
         />
       </Card>
 
-      <Card
-        title={
-          <Title level={4} style={{ margin: 0 }}>
-            Daftar Proposal Pembayaran
-          </Title>
-        }
-      >
+      <Card>
         <Table
           columns={columns}
           dataSource={proposals}
           rowKey="id"
           loading={isLoading}
+          scroll={{ x: 750 }}
           pagination={{ pageSize: 10 }}
         />
       </Card>

@@ -5,28 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { switchRole } from '../../api/endpoints/auth';
 import type { AppRole } from '@nusaproc/shared';
+import { ROLE_COLORS, ROLE_LABELS } from '../common/StatusTag';
 
 const { Text } = Typography;
-
-const ROLE_LABELS: Record<AppRole, string> = {
-  REQUESTER: 'Pengaju (Requester)',
-  APPROVER: 'Penyetuju (Approver)',
-  ACCOUNT_PAYABLE: 'Hutang Usaha (Account Payable)',
-  WAREHOUSE: 'Gudang (Warehouse)',
-  FINANCE: 'Keuangan (Finance)',
-  AUDITOR: 'Auditor Internal',
-  ADMIN: 'Administrator Sistem',
-};
-
-const ROLE_COLORS: Record<AppRole, string> = {
-  REQUESTER: 'blue',
-  APPROVER: 'purple',
-  ACCOUNT_PAYABLE: 'cyan',
-  WAREHOUSE: 'orange',
-  FINANCE: 'green',
-  AUDITOR: 'magenta',
-  ADMIN: 'red',
-};
 
 export const RoleSwitcher: React.FC = () => {
   const navigate = useNavigate();

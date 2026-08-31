@@ -26,14 +26,12 @@ export async function runTestInRollback<T>(
   try {
     await sql.begin(async (tx) => {
       executionResult = await callback(tx as TransactionClient);
-      // Force rollback by throwing sentinel error inside transaction
       throw new TestRollbackSentinel(executionResult);
     });
-  } catch (err) {
+  } catch (err: unknown) {
     if (err instanceof TestRollbackSentinel) {
       return err.result as T;
     }
-    // Re-throw genuine errors thrown by the test function or DB constraints
     throw err;
   }
 

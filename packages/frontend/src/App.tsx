@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './routes';
 import { StepUpReauthModal } from './components/security/StepUpReauthModal';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 dayjs.locale('id');
 const queryClient = new QueryClient();
@@ -40,7 +41,9 @@ export const App: React.FC = () => {
         }}
       >
         <AntdApp>
-          <RouterProvider router={router} />
+          <ErrorBoundary>
+            <RouterProvider router={router} />
+          </ErrorBoundary>
           {/* Global Re-Authentication Modal Interceptor (R5, R43) */}
           <StepUpReauthModal />
         </AntdApp>

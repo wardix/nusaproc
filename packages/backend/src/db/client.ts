@@ -4,18 +4,10 @@ export const getDatabaseUrl = (): string => {
   if (process.env.DATABASE_URL) {
     return process.env.DATABASE_URL;
   }
-  if (process.env.NODE_ENV === 'test') {
-    return 'sqlite::memory:';
-  }
-  return 'postgres://nusaproc:secret@localhost:5432/nusaproc_db';
+  return 'postgres://nusaproc:secret@172.17.0.4:5432/nusaproc_db?sslmode=disable';
 };
 
-export const sql = new SQL({
-  url: getDatabaseUrl(),
-  max: 20,
-  idleTimeout: 30,
-  tls: process.env.NODE_ENV === 'production',
-});
+export const sql = new SQL(getDatabaseUrl());
 
 export type TransactionClient = typeof sql;
 

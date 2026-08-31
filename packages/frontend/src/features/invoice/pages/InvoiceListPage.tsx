@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Table, Button, Tag, Space, Card, Typography, Modal, Input, Drawer, notification } from 'antd';
-import { SyncOutlined, CheckCircleOutlined, WarningOutlined, EyeOutlined } from '@ant-design/icons';
+import { SyncOutlined, EyeOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { invoiceApi } from '../../../api/endpoints/invoice';
 import { formatRupiah } from '../../../utils/currency';
 import { TwoWayMatcherScreen } from '../components/TwoWayMatcherScreen';
+import { PageHeader } from '../../../components/common/PageHeader';
+import { StatusTag } from '../../../components/common/StatusTag';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export interface InvoiceItem {
   id: string;
@@ -105,19 +107,7 @@ export const InvoiceListPage: React.FC = () => {
       title: 'Status 2-Way Matching',
       dataIndex: 'matchStatus',
       key: 'matchStatus',
-      render: (status: string) => {
-        const colorMap: Record<string, string> = {
-          UNMATCHED: 'default',
-          MATCHED_OK: 'success',
-          MATCHED_WITH_EXCEPTION: 'warning',
-          EXCEPTION_OVERRIDDEN: 'blue',
-        };
-        return (
-          <Tag color={colorMap[status] || 'default'} icon={status === 'MATCHED_OK' ? <CheckCircleOutlined /> : <WarningOutlined />}>
-            {status}
-          </Tag>
-        );
-      },
+      render: (status: string) => <StatusTag status={status} category="invoice" />,
     },
     {
       title: 'Aksi',
@@ -158,19 +148,20 @@ export const InvoiceListPage: React.FC = () => {
   ];
 
   return (
-    <div>
-      <Card
-        title={
-          <Title level={4} style={{ margin: 0 }}>
-            Verifikasi Tagihan Vendor & 2-Way Matching Engine (R33–R40)
-          </Title>
-        }
-      >
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <PageHeader
+        title="Verifikasi Tagihan Vendor & 2-Way Matching Engine (R33–R40)"
+        subtitle="Pencocokan tagihan otomatis terhadap Surat Pesanan (PO), validasi Dual-NSFP Coretax, dan otorisasi selisih oleh Head of AP."
+        icon={<SafetyCertificateOutlined style={{ color: '#0052CC' }} />}
+      />
+
+      <Card>
         <Table
           columns={columns}
           dataSource={invoices}
           rowKey="id"
           loading={isLoading}
+          scroll={{ x: 800 }}
           pagination={{ pageSize: 10 }}
         />
       </Card>
