@@ -69,12 +69,12 @@ export async function runMigrations(customSql?: TransactionClient): Promise<Migr
     .sort();
 
   // Ensure migration tracking table exists
-  await db`
+  await db.unsafe(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       version VARCHAR(255) PRIMARY KEY,
       applied_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
     );
-  `;
+  `);
 
   for (const file of files) {
     const version = file.replace(/\.sql$/, '');
@@ -90,16 +90,21 @@ export async function runMigrations(customSql?: TransactionClient): Promise<Migr
     }
 
     const filePath = join(migrationsDir, file);
-    console.log(`[Migration] Executing ${file}...`);
+    const sqlContent = readFileSync(filePath, 'utf-8');
+    const statements = splitSqlStatements(sqlContent);
+
+    console.log(`[Migration] Executing ${file} (${statements.length} statements)...`);
     try {
-      await db.file(filePath);
+      for (const statement of statements) {
+        await db.unsafe(statement);
+      }
 
       // Record migration version
       await db`
         INSERT INTO schema_migrations (version) VALUES (${version})
       `;
 
-      results.push({ migrationName: file, success: true, statementsExecuted: 1 });
+      results.push({ migrationName: file, success: true, statementsExecuted: statements.length });
       console.log(`[Migration] Successfully applied ${file}`);
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);

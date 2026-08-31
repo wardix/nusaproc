@@ -16,7 +16,7 @@ export interface AppConfig {
 export const config: AppConfig = {
   port: Number(process.env.PORT) || 8000,
   nodeEnv: process.env.NODE_ENV || 'development',
-  databaseUrl: process.env.DATABASE_URL || 'postgres://nusaproc:secret@172.17.0.4:5432/nusaproc_db?sslmode=disable',
+  databaseUrl: process.env.DATABASE_URL || 'postgres://nusaproc:secret@localhost:5432/nusaproc_db',
   redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
   jwtSecret: process.env.JWT_SECRET || 'nusaproc-dev-secret-key-change-in-production',
   storageDriver: (process.env.STORAGE_DRIVER as 'local' | 's3' | 'minio') || 'local',

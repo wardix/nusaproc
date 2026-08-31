@@ -4,7 +4,10 @@ export const getDatabaseUrl = (): string => {
   if (process.env.DATABASE_URL) {
     return process.env.DATABASE_URL;
   }
-  return 'postgres://nusaproc:secret@172.17.0.4:5432/nusaproc_db?sslmode=disable';
+  if (process.env.NODE_ENV === 'test') {
+    return 'sqlite::memory:';
+  }
+  return 'postgres://nusaproc:secret@localhost:5432/nusaproc_db';
 };
 
 export const sql = new SQL(getDatabaseUrl());
