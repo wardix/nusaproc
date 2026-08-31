@@ -4,6 +4,7 @@ import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { RoleSwitcher } from './RoleSwitcher';
 import { getNavigationMenuItemsForRole } from './navigation';
+import { FeedbackWidget } from '../feedback/FeedbackWidget';
 
 const { Header, Content, Sider } = Layout;
 const { Title } = Typography;
@@ -90,6 +91,7 @@ export const AppLayout: React.FC = () => {
           </Content>
         </Layout>
       </Layout>
+      <FeedbackWidget />
     </Layout>
   );
 };

@@ -12,6 +12,7 @@ import {
   DashboardOutlined,
   TeamOutlined,
   ApartmentOutlined,
+  CommentOutlined,
 } from '@ant-design/icons';
 import type { AppRole } from '@nusaproc/shared';
 import type { MenuProps } from 'antd';
@@ -161,6 +162,11 @@ export function getNavigationMenuItemsForRole(role: AppRole): MenuItem[] {
           key: '/admin/organization',
           icon: <ApartmentOutlined />,
           label: 'Master Cabang & Divisi',
+        },
+        {
+          key: '/admin/feedback',
+          icon: <CommentOutlined />,
+          label: 'Masukan & Laporan Kendala',
         },
       ];
   }

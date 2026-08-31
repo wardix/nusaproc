@@ -28,6 +28,7 @@ const PaymentListPage = lazy(() => import('./features/payment/pages/PaymentListP
 const AuditLogPage = lazy(() => import('./features/audit/pages/AuditLogPage').then(m => ({ default: m.AuditLogPage })));
 const AdminUsersPage = lazy(() => import('./features/admin/pages/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
 const AdminOrganizationPage = lazy(() => import('./features/admin/pages/AdminOrganizationPage').then(m => ({ default: m.AdminOrganizationPage })));
+const AdminFeedbackPage = lazy(() => import('./features/admin/pages/AdminFeedbackPage').then(m => ({ default: m.AdminFeedbackPage })));
 
 export const routes: RouteObject[] = [
   {
@@ -93,6 +94,10 @@ export const routes: RouteObject[] = [
       {
         path: 'admin/organization',
         element: withSuspense(AdminOrganizationPage),
+      },
+      {
+        path: 'admin/feedback',
+        element: withSuspense(AdminFeedbackPage),
       },
     ],
   },

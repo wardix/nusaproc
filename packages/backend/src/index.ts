@@ -8,6 +8,7 @@ import { createInvoiceApp } from './domain/invoice/routes';
 import { createPaymentApp } from './domain/payment/routes';
 import { createAuditApp } from './domain/audit/routes';
 import { createOrganizationApp } from './domain/organization/routes';
+import { createFeedbackApp } from './domain/feedback/routes';
 import { createDocsApp } from './docs/swaggerUi';
 import { auditorSandboxMiddleware } from './middleware/auditor_sandbox';
 
@@ -36,6 +37,7 @@ export function createApp(): Hono {
   apiV1.route('/', createPaymentApp());
   apiV1.route('/', createAuditApp());
   apiV1.route('/', createOrganizationApp());
+  apiV1.route('/', createFeedbackApp());
 
   app.route('/api/v1', apiV1);
   return app;
