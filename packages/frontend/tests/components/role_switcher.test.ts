@@ -35,6 +35,15 @@ describe('Epic 10: [Frontend Core] Role Switcher & Navigation Filtering (US14, R
     expect(keys).not.toContain('/payments');
   });
 
+  it('filters navigation menu items for APPROVER role', () => {
+    const items = getNavigationMenuItemsForRole('APPROVER');
+    const keys = items.map((i) => i?.key);
+    expect(keys).toContain('/approvals/pr');
+    expect(keys).toContain('/approvals/po');
+    expect(keys).not.toContain('/audit');
+    expect(keys).not.toContain('/payments');
+  });
+
   it('filters navigation menu items for WAREHOUSE role', () => {
     const items = getNavigationMenuItemsForRole('WAREHOUSE');
     const keys = items.map((i) => i?.key);

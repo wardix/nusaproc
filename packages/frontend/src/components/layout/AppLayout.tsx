@@ -27,6 +27,29 @@ export const AppLayout: React.FC = () => {
 
   const isMobile = !screens.md;
 
+  const getSelectedMenuKeys = (pathname: string): string[] => {
+    // 1. Exact match in current role's menu items
+    if (menuItems.some((item) => item?.key === pathname)) {
+      return [pathname];
+    }
+    // 2. Hierarchical prefix matches for sub-routes
+    if (pathname.startsWith('/approvals/pr')) return ['/approvals/pr'];
+    if (pathname.startsWith('/approvals/po')) return ['/approvals/po'];
+    if (pathname.startsWith('/pr')) return ['/pr'];
+    if (pathname.startsWith('/po')) return ['/po'];
+    if (pathname.startsWith('/vendors')) return ['/vendors'];
+    if (pathname.startsWith('/receipts')) return ['/receipts'];
+    if (pathname.startsWith('/invoices')) return ['/invoices'];
+    if (pathname.startsWith('/ncr')) return ['/ncr'];
+    if (pathname.startsWith('/payments')) return ['/payments'];
+    if (pathname.startsWith('/audit')) return ['/audit'];
+    if (pathname.startsWith('/admin/users')) return ['/admin/users'];
+    if (pathname.startsWith('/admin/organization')) return ['/admin/organization'];
+    if (pathname.startsWith('/admin/feedback')) return ['/admin/feedback'];
+
+    return [pathname];
+  };
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Header
@@ -70,7 +93,7 @@ export const AppLayout: React.FC = () => {
         >
           <Menu
             mode="inline"
-            selectedKeys={[location.pathname]}
+            selectedKeys={getSelectedMenuKeys(location.pathname)}
             items={menuItems}
             onClick={({ key }) => navigate(key)}
             style={{ borderRight: 0, paddingTop: 8 }}
