@@ -14,18 +14,18 @@ export const PoListPage: React.FC = () => {
   const { token } = theme.useToken();
   const queryClient = useQueryClient();
 
-  // Fetch PO detail / list using mock/seeded demo ID or list
+  // Fetch PO list from backend
   const seededPoId = '50000000-0000-0000-0000-000000000001';
   const { data, isLoading } = useQuery({
-    queryKey: ['purchase-order', seededPoId],
-    queryFn: () => poApi.getById(seededPoId).catch(() => ({ data: null })),
+    queryKey: ['purchase-orders'],
+    queryFn: () => poApi.list().catch(() => ({ data: [] })),
   });
 
   const issueMutation = useMutation({
     mutationFn: (id: string) => poApi.issue(id),
     onSuccess: () => {
       notification.success({ message: 'Purchase Order berhasil diterbitkan resmi (R24).' });
-      queryClient.invalidateQueries({ queryKey: ['purchase-order'] });
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
     },
     onError: (err: Error) => {
       notification.error({ message: 'Gagal menerbitkan PO', description: err.message });
@@ -57,7 +57,8 @@ export const PoListPage: React.FC = () => {
     status: 'ISSUED',
   };
 
-  const poData = data?.data ? [data.data] : [defaultPo];
+  const rawList = data?.data;
+  const poData = Array.isArray(rawList) && rawList.length > 0 ? rawList : (rawList && !Array.isArray(rawList) ? [rawList] : [defaultPo]);
 
   const columns = [
     {

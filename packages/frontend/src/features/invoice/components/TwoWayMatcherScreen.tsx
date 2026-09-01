@@ -25,11 +25,14 @@ import {
 import { formatRupiah } from '../../../utils/currency';
 import { evaluateTwoWayMatchingStatus } from '../utils/matching';
 import { useAuthStore } from '../../../stores/useAuthStore';
+import { invoiceApi } from '../../../api/endpoints/invoice';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 interface MatcherProps {
+  invoiceId?: string;
+  onOverrideSuccess?: () => void;
   poData: {
     poNumber: string;
     vendorName?: string;
@@ -46,13 +49,14 @@ interface MatcherProps {
   };
 }
 
-export const TwoWayMatcherScreen: React.FC<MatcherProps> = ({ poData, invoiceData }) => {
+export const TwoWayMatcherScreen: React.FC<MatcherProps> = ({ invoiceId, onOverrideSuccess, poData, invoiceData }) => {
   const { message } = App.useApp();
   const { token } = theme.useToken();
   const { user } = useAuthStore();
   const [isOverrideModalOpen, setIsOverrideModalOpen] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
   const [isOverridden, setIsOverridden] = useState(false);
+  const [submittingOverride, setSubmittingOverride] = useState(false);
 
   const evaluation = evaluateTwoWayMatchingStatus(poData.totalAmount, invoiceData.subtotalAmount);
   const isHeadOfAp =
@@ -60,14 +64,26 @@ export const TwoWayMatcherScreen: React.FC<MatcherProps> = ({ poData, invoiceDat
     user?.activeRole === 'FINANCE' ||
     user?.activeRole === 'ADMIN';
 
-  const handleOverrideSubmit = () => {
+  const handleOverrideSubmit = async () => {
     if (!overrideReason || overrideReason.trim().length < 5) {
       message.error('Alasan tertulis wajib diisi minimal 5 karakter.');
       return;
     }
-    setIsOverridden(true);
-    setIsOverrideModalOpen(false);
-    message.success('Exception override berhasil dicatat dan diaudit!');
+    setSubmittingOverride(true);
+    try {
+      if (invoiceId) {
+        await invoiceApi.overrideException(invoiceId, overrideReason);
+      }
+      setIsOverridden(true);
+      setIsOverrideModalOpen(false);
+      message.success('Exception override berhasil disetujui dan diaudit (R39)!');
+      onOverrideSuccess?.();
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.detail || err?.message || 'Gagal memproses override exception';
+      message.error(errMsg);
+    } finally {
+      setSubmittingOverride(false);
+    }
   };
 
   const defaultPoItems = poData.items || [
@@ -242,6 +258,7 @@ export const TwoWayMatcherScreen: React.FC<MatcherProps> = ({ poData, invoiceDat
         onCancel={() => setIsOverrideModalOpen(false)}
         onOk={handleOverrideSubmit}
         okText="Catat & Lepaskan Invoice"
+        confirmLoading={submittingOverride}
         okButtonProps={{ danger: true }}
       >
         <Space direction="vertical" style={{ width: '100%' }}>

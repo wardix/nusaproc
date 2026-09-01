@@ -208,6 +208,11 @@ export const InvoiceListPage: React.FC = () => {
       >
         {matcherInvoice && (
           <TwoWayMatcherScreen
+            invoiceId={matcherInvoice.id}
+            onOverrideSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ['invoices'] });
+              setMatcherInvoice(null);
+            }}
             poData={{
               poNumber: matcherInvoice.poNumber || matcherInvoice.poId || 'PO-202608-0001',
               vendorName: 'PT Fiber Optik Nusantara',

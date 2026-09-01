@@ -213,6 +213,11 @@ export async function generatePoPdf(poId: string): Promise<Uint8Array> {
   return await createPoPdfDocument({ po, items, vendor, bankAccount });
 }
 
+export async function listPurchaseOrders(params?: { status?: string }): Promise<PurchaseOrderRecord[]> {
+  const repo = new PoRepository();
+  return await repo.listPurchaseOrders(params);
+}
+
 export async function getPurchaseOrderById(poId: string): Promise<PoWithDetails> {
   const repo = new PoRepository();
   const po = await repo.findPoById(poId);

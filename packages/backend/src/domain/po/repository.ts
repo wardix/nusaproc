@@ -83,6 +83,29 @@ export class PoRepository {
     return results;
   }
 
+  async listPurchaseOrders(params?: { status?: string }): Promise<PurchaseOrderRecord[]> {
+    const rows = await this.db`
+      SELECT 
+        po.id, po.po_number AS "poNumber", po.vendor_id AS "vendorId",
+        v.name AS "vendorName",
+        po.vendor_bank_account_id AS "vendorBankAccountId", po.payment_term_type AS "paymentTermType",
+        po.version_number AS "versionNumber", po.status,
+        po.subtotal_amount::float AS "subtotalAmount", po.tax_amount::float AS "taxAmount",
+        po.grand_total_amount::float AS "grandTotalAmount",
+        po.terms_and_conditions AS "termsAndConditions",
+        po.created_by AS "createdBy", po.approved_by AS "approvedBy",
+        po.approved_at::text AS "approvedAt", po.issued_at::text AS "issuedAt",
+        po.created_at::text AS "createdAt", po.updated_at::text AS "updatedAt"
+      FROM purchase_order po
+      LEFT JOIN vendor v ON v.id = po.vendor_id
+      WHERE 1=1
+      ${params?.status ? sql`AND po.status = ${params.status}` : sql``}
+      ORDER BY po.created_at DESC
+    `;
+
+    return rows as unknown as PurchaseOrderRecord[];
+  }
+
   async findPoById(id: string): Promise<PurchaseOrderRecord | null> {
     const rows = await this.db`
       SELECT 

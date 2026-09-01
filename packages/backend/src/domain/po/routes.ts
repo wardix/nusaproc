@@ -93,7 +93,18 @@ export function createPoAndVendorApp(): Hono {
     }
   });
 
-  // 5. Get Purchase Order Details
+  // 5. List Purchase Orders
+  app.get('/purchase-orders', async (c) => {
+    const status = c.req.query('status');
+    try {
+      const pos = await listPurchaseOrders({ status });
+      return c.json({ success: true, data: pos });
+    } catch (err: unknown) {
+      return c.json(formatProblemDetails(err, c.req.path), 400);
+    }
+  });
+
+  // 6. Get Purchase Order Details
   app.get('/purchase-orders/:id', async (c) => {
     const poId = c.req.param('id');
     try {

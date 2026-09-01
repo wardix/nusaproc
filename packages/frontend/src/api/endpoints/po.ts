@@ -22,6 +22,9 @@ export interface AmendPoPayload {
 }
 
 export const poApi = {
+  list: (params?: { status?: string }) =>
+    apiClient.get('/purchase-orders', { params }).then((res) => res.data),
+
   getById: (id: string) =>
     apiClient.get(`/purchase-orders/${id}`).then((res) => res.data),
 
