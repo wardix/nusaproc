@@ -7,6 +7,8 @@ export interface CreatePrPayload {
   requiredDate: string;
   paymentTermType: 'ADVANCE_OR_COD' | 'PAY_AFTER_RECEIPT';
   businessJustification: string;
+  isEmergency?: boolean;
+  emergencyJustification?: string;
   items: Array<{
     lineNumber?: number;
     itemName: string;
