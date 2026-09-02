@@ -156,6 +156,16 @@ export const PrListPage: React.FC = () => {
                 </Button>
               </>
             )}
+            {record.status === 'APPROVED' && (
+              <Button
+                type="dashed"
+                size="small"
+                icon={<ShoppingCartOutlined />}
+                onClick={() => navigate(`/po/create?prId=${record.id}`)}
+              >
+                Terbitkan PO
+              </Button>
+            )}
           </Space>
         );
       },

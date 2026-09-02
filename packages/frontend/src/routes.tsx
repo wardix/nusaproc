@@ -20,6 +20,7 @@ const ActionDashboard = lazy(() => import('./features/dashboard/ActionDashboard'
 const PrListPage = lazy(() => import('./features/pr/pages/PrListPage').then(m => ({ default: m.PrListPage })));
 const PrCreateForm = lazy(() => import('./features/pr/components/PrCreateForm').then(m => ({ default: m.PrCreateForm })));
 const PoListPage = lazy(() => import('./features/po/pages/PoListPage').then(m => ({ default: m.PoListPage })));
+const PoCreateForm = lazy(() => import('./features/po/components/PoCreateForm').then(m => ({ default: m.PoCreateForm })));
 const InvoiceListPage = lazy(() => import('./features/invoice/pages/InvoiceListPage').then(m => ({ default: m.InvoiceListPage })));
 const ReceiptListPage = lazy(() => import('./features/receipt/pages/ReceiptListPage').then(m => ({ default: m.ReceiptListPage })));
 const BastCreateForm = lazy(() => import('./features/receipt/components/BastCreateForm').then(m => ({ default: m.BastCreateForm })));
@@ -67,6 +68,10 @@ export const routes: RouteObject[] = [
       {
         path: 'po',
         element: withSuspense(PoListPage),
+      },
+      {
+        path: 'po/create',
+        element: withSuspense(PoCreateForm),
       },
       {
         path: 'vendors',

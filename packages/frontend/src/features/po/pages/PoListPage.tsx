@@ -1,7 +1,8 @@
 import React from 'react';
 import { Table, Button, Space, Card, Typography, App, theme } from 'antd';
-import { FilePdfOutlined, CheckOutlined, FileTextOutlined } from '@ant-design/icons';
+import { FilePdfOutlined, CheckOutlined, FileTextOutlined, PlusOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { poApi } from '../../../api/endpoints/po';
 import { formatRupiah } from '../../../utils/currency';
 import { PageHeader } from '../../../components/common/PageHeader';
@@ -12,6 +13,7 @@ const { Text } = Typography;
 export const PoListPage: React.FC = () => {
   const { notification } = App.useApp();
   const { token } = theme.useToken();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   // Fetch PO list from backend
@@ -126,6 +128,15 @@ export const PoListPage: React.FC = () => {
         title="Katalog Surat Pesanan (Purchase Order)"
         subtitle="Daftar pemesanan resmi kepada vendor terverifikasi dengan proteksi penerbitan dan unduhan PDF resmi (R24–R27)."
         icon={<FileTextOutlined style={{ color: token.colorPrimary }} />}
+        extra={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/po/create')}
+          >
+            Buat PO Baru
+          </Button>
+        }
       />
 
       <Card>
