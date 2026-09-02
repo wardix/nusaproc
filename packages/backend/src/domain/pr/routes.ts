@@ -84,7 +84,8 @@ export function createPrApp(): Hono {
 
       return c.json({ success: true, data: pr });
     } catch (err: unknown) {
-      return c.json(formatProblemDetails(err, c.req.path), 400);
+      const problem = formatProblemDetails(err, c.req.path);
+      return c.json(problem, (problem.status as any) || 400);
     }
   });
 

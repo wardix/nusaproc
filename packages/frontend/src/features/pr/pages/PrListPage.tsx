@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Button, Tag, Space, Card, Typography, Modal, Input, App, theme } from 'antd';
+import { Table, Button, Tag, Space, Card, Typography, Modal, Input, App, theme, Tooltip } from 'antd';
 import { PlusOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -42,8 +42,8 @@ export const PrListPage: React.FC = () => {
       prApi.decide(id, {
         decision,
         rejectionReason: reason,
-        approverMaxLimit: 100000000,
-        approverDivisionId: user?.divisionId,
+        approverMaxLimit: user?.activeRole === 'ADMIN' ? 999_999_999_999 : 100_000_000,
+        approverDivisionId: user?.activeRole === 'ADMIN' ? undefined : user?.divisionId,
       }),
     onSuccess: (_, variables) => {
       notification.success({
@@ -53,8 +53,9 @@ export const PrListPage: React.FC = () => {
       setRejectionReason('');
       queryClient.invalidateQueries({ queryKey: ['purchase-requests'] });
     },
-    onError: (err: Error) => {
-      notification.error({ message: 'Gagal memproses persetujuan PR', description: err.message });
+    onError: (err: any) => {
+      const errMsg = err?.response?.data?.detail || err?.message || 'Gagal memproses persetujuan PR';
+      notification.error({ message: 'Persetujuan PR Ditolak Sistem', description: errMsg });
     },
   });
 
@@ -102,45 +103,62 @@ export const PrListPage: React.FC = () => {
     {
       title: 'Aksi',
       key: 'action',
-      render: (_: unknown, record: { id: string; status: string }) => (
-        <Space size="small">
-          {record.status === 'DRAFT' && (
-            <Button
-              type="primary"
-              size="small"
-              icon={<SendOutlined />}
-              loading={submitMutation.isPending}
-              onClick={() => submitMutation.mutate(record.id)}
-            >
-              Ajukan
-            </Button>
-          )}
-          {record.status === 'SUBMITTED' && (
-            <>
+      render: (_: unknown, record: { id: string; requesterId?: string; status: string }) => {
+        const isSelfRequester = Boolean(record.requesterId && user?.id && record.requesterId === user.id);
+
+        return (
+          <Space size="small">
+            {record.status === 'DRAFT' && (
               <Button
                 type="primary"
                 size="small"
-                icon={<CheckCircleOutlined />}
-                loading={decideMutation.isPending}
-                onClick={() => decideMutation.mutate({ id: record.id, decision: 'APPROVED' })}
+                icon={<SendOutlined />}
+                loading={submitMutation.isPending}
+                onClick={() => submitMutation.mutate(record.id)}
               >
-                Setujui
+                Ajukan
               </Button>
-              <Button
-                danger
-                size="small"
-                icon={<CloseCircleOutlined />}
-                onClick={() => {
-                  setSelectedPrId(record.id);
-                  setRejectModalOpen(true);
-                }}
-              >
-                Tolak
-              </Button>
-            </>
-          )}
-        </Space>
-      ),
+            )}
+            {record.status === 'SUBMITTED' && (
+              <>
+                {isSelfRequester ? (
+                  <Tooltip title="Pelanggaran SoD (R15): Anda adalah pembuat PR ini. Persetujuan harus dilakukan oleh akun Approver lain.">
+                    <Button
+                      type="primary"
+                      size="small"
+                      disabled
+                      icon={<CheckCircleOutlined />}
+                    >
+                      Setujui
+                    </Button>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<CheckCircleOutlined />}
+                    loading={decideMutation.isPending}
+                    onClick={() => decideMutation.mutate({ id: record.id, decision: 'APPROVED' })}
+                  >
+                    Setujui
+                  </Button>
+                )}
+                <Button
+                  danger
+                  size="small"
+                  icon={<CloseCircleOutlined />}
+                  onClick={() => {
+                    setSelectedPrId(record.id);
+                    setRejectModalOpen(true);
+                  }}
+                >
+                  Tolak
+                </Button>
+              </>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
