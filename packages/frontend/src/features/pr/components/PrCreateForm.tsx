@@ -190,10 +190,9 @@ export const PrCreateForm: React.FC = () => {
             <Col xs={24} sm={12}>
               <Form.Item
                 name="requiredDate"
-                label="Tanggal Kebutuhan / Deadline"
-                rules={[{ required: true, message: 'Pilih tanggal kebutuhan' }]}
+                label="Tanggal Kebutuhan / Deadline (Opsional)"
               >
-                <DatePicker style={{ width: '100%' }} />
+                <DatePicker style={{ width: '100%' }} placeholder="Pilih tanggal kebutuhan (opsional)" />
               </Form.Item>
             </Col>
           </Row>

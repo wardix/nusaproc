@@ -55,7 +55,7 @@ export async function createPurchaseRequest(input: CreatePrInput): Promise<PrWit
       costCenter: validated.costCenter,
       divisionId: validated.divisionId,
       branchId: validated.branchId,
-      requiredDate: validated.requiredDate,
+      requiredDate: validated.requiredDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
       paymentTermType: validated.paymentTermType,
       isEmergency: validated.isEmergency,
       emergencyJustification: validated.emergencyJustification || null,

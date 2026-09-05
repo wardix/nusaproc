@@ -80,7 +80,7 @@ export interface CreatePrInput {
   costCenter: string;
   divisionId: string;
   branchId: string;
-  requiredDate: string;
+  requiredDate?: string;
   paymentTermType: PaymentTermType;
   businessJustification: string;
   isEmergency?: boolean;
@@ -119,7 +119,7 @@ export const createPrSchema = z.object({
   costCenter: z.string().min(1, 'Cost center wajib diisi'),
   divisionId: z.string().min(1, 'Division ID wajib diisi'),
   branchId: z.string().min(1, 'Branch ID wajib diisi'),
-  requiredDate: z.string().min(1, 'Tanggal kebutuhan wajib diisi'),
+  requiredDate: z.string().optional(),
   paymentTermType: z.enum(['ADVANCE_OR_COD', 'PAY_AFTER_RECEIPT'], {
     errorMap: () => ({ message: 'paymentTermType wajib dipilih (ADVANCE_OR_COD atau PAY_AFTER_RECEIPT)' }),
   }),

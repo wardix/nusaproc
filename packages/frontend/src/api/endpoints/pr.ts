@@ -4,7 +4,7 @@ export interface CreatePrPayload {
   costCenter: string;
   divisionId: string;
   branchId: string;
-  requiredDate: string;
+  requiredDate?: string;
   paymentTermType: 'ADVANCE_OR_COD' | 'PAY_AFTER_RECEIPT';
   businessJustification: string;
   isEmergency?: boolean;
