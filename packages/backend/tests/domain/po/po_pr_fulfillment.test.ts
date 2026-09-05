@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { sql } from '../../../src/db/client';
 import { app } from '../../../src/index';
 import { createPurchaseRequest, submitPurchaseRequest, decideApprovalStep } from '../../../src/domain/pr/service';
 import { createVendor, createVendorBankAccount, verifyBankAccountStage } from '../../../src/domain/vendor/service';
 import { createPurchaseOrder } from '../../../src/domain/po/service';
+import { cleanupTestUsers } from '../../helpers/test_cleaner';
 
 describe('Purchase Request Fulfillment & Double PO Prevention (R10, R11, R20, R24)', () => {
   let requesterId: string;
@@ -286,5 +287,9 @@ describe('Purchase Request Fulfillment & Double PO Prevention (R10, R11, R20, R2
         ],
       })
     ).rejects.toThrow('belum berstatus APPROVED');
+  });
+
+  afterAll(async () => {
+    await cleanupTestUsers([requesterId, approverId, apMakerId, apCheckerId]);
   });
 });
