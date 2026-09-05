@@ -88,6 +88,45 @@ export interface PoWithDetails extends PurchaseOrderRecord {
   amendments: PoAmendmentHistoryRecord[];
 }
 
+export interface UpdatePoInput {
+  poId: string;
+  vendorId?: string;
+  vendorBankAccountId?: string;
+  paymentTermType?: PaymentTermType;
+  termsAndConditions?: string;
+  taxAmount?: number;
+  reason?: string;
+  userId: string;
+  userRole?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  items?: PoItemInput[];
+}
+
+export const updatePoSchema = z.object({
+  poId: z.string().uuid().optional(),
+  vendorId: z.string().uuid('Vendor ID wajib valid UUID').optional(),
+  vendorBankAccountId: z.string().uuid('Vendor Bank Account ID wajib valid UUID').optional(),
+  paymentTermType: z.enum(['ADVANCE_OR_COD', 'PAY_AFTER_RECEIPT']).optional(),
+  termsAndConditions: z.string().optional(),
+  taxAmount: z.number().nonnegative().optional(),
+  reason: z.string().optional(),
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional(),
+  items: z
+    .array(
+      z.object({
+        prItemId: z.string().uuid('PR Item ID wajib valid UUID'),
+        lineNumber: z.number().int().positive().optional(),
+        itemName: z.string().min(1, 'Nama item wajib diisi'),
+        quantityOrdered: z.number().positive('Jumlah pesanan harus > 0'),
+        uom: z.string().min(1, 'Satuan unit wajib diisi'),
+        unitPrice: z.number().nonnegative('Harga satuan harus >= 0'),
+      })
+    )
+    .optional(),
+});
+
 export const createPoSchema = z.object({
   prId: z.string().uuid().optional(),
   vendorId: z.string().uuid('Vendor ID wajib valid UUID'),
@@ -108,3 +147,4 @@ export const createPoSchema = z.object({
     )
     .min(1, 'PO harus memiliki minimal 1 item'),
 });
+

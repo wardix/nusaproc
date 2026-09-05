@@ -16,6 +16,23 @@ export interface CreatePoPayload {
   }>;
 }
 
+export interface UpdatePoPayload {
+  vendorId?: string;
+  vendorBankAccountId?: string;
+  paymentTermType?: 'ADVANCE_OR_COD' | 'PAY_AFTER_RECEIPT';
+  taxAmount?: number;
+  termsAndConditions?: string;
+  reason?: string;
+  items?: Array<{
+    prItemId: string;
+    lineNumber?: number;
+    itemName: string;
+    quantityOrdered: number;
+    uom: string;
+    unitPrice: number;
+  }>;
+}
+
 export interface AmendPoPayload {
   reason: string;
   updatedTermsAndConditions?: string;
@@ -30,6 +47,9 @@ export const poApi = {
 
   create: (data: CreatePoPayload) =>
     apiClient.post('/purchase-orders', data).then((res) => res.data),
+
+  update: (id: string, data: UpdatePoPayload) =>
+    apiClient.put(`/purchase-orders/${id}`, data).then((res) => res.data),
 
   approve: (id: string) =>
     apiClient.post(`/purchase-orders/${id}/approve`).then((res) => res.data),

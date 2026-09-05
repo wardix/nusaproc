@@ -8,6 +8,7 @@ import {
 } from '../vendor/service';
 import {
   createPurchaseOrder,
+  updatePurchaseOrder,
   approvePurchaseOrder,
   issuePurchaseOrder,
   amendPurchaseOrder,
@@ -149,7 +150,38 @@ export function createPoAndVendorApp(): Hono {
     }
   });
 
-  // 9. Approve Purchase Order
+  // 9. Update Purchase Order (Pre-Approval Revision / Change Vendor)
+  const handleUpdatePo = async (c: any) => {
+    const poId = c.req.param('id');
+    const authUser = c.get('authUser');
+    const userId = authUser?.userId || c.req.header('X-User-Id');
+    const userRole = authUser?.activeRole || c.req.header('X-User-Role') || 'ACCOUNT_PAYABLE';
+
+    if (!userId) {
+      return c.json(formatProblemDetails(new Error('User ID diperlukan untuk memperbarui PO'), c.req.path), 401);
+    }
+
+    try {
+      const body = await c.req.json();
+      const updatedPo = await updatePurchaseOrder({
+        ...body,
+        poId,
+        userId,
+        userRole,
+        ipAddress: c.req.header('x-forwarded-for') || '127.0.0.1',
+        userAgent: c.req.header('user-agent') || 'Browser-Client',
+      });
+      return c.json({ success: true, data: updatedPo });
+    } catch (err: unknown) {
+      const problem = formatProblemDetails(err, c.req.path);
+      return c.json(problem, (problem.status && problem.status >= 400 && problem.status < 600) ? (problem.status as any) : 400);
+    }
+  };
+
+  app.put('/purchase-orders/:id', handleUpdatePo);
+  app.patch('/purchase-orders/:id', handleUpdatePo);
+
+  // 10. Approve Purchase Order
   app.post('/purchase-orders/:id/approve', async (c) => {
     const poId = c.req.param('id');
     const userId = c.get('authUser')?.userId || c.req.header('X-User-Id');

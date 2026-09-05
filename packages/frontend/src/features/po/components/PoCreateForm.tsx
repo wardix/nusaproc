@@ -97,12 +97,15 @@ export const PoCreateForm: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialPrId = searchParams.get('prId') || '';
+  const initialPoId = searchParams.get('poId') || '';
+  const isEditMode = Boolean(initialPoId);
 
   const [form] = Form.useForm();
   const [approvedPrs, setApprovedPrs] = useState<any[]>([]);
   const [selectedPrId, setSelectedPrId] = useState<string>(initialPrId);
   const [vendors, setVendors] = useState<VendorOption[]>(DEFAULT_VENDORS);
   const [selectedVendorId, setSelectedVendorId] = useState<string>(DEFAULT_VENDORS[0].id);
+  const [editingPoNumber, setEditingPoNumber] = useState<string>('');
   const [items, setItems] = useState<PoItemRow[]>([
     {
       key: '1',
@@ -133,19 +136,55 @@ export const PoCreateForm: React.FC = () => {
         const vList = res.data || [];
         if (vList.length > 0) {
           setVendors(vList);
-          setSelectedVendorId(vList[0].id);
-          form.setFieldValue('vendorId', vList[0].id);
-          if (vList[0].bankAccounts && vList[0].bankAccounts.length > 0) {
-            form.setFieldValue('vendorBankAccountId', vList[0].bankAccounts[0].id);
+          if (!isEditMode) {
+            setSelectedVendorId(vList[0].id);
+            form.setFieldValue('vendorId', vList[0].id);
+            if (vList[0].bankAccounts && vList[0].bankAccounts.length > 0) {
+              form.setFieldValue('vendorBankAccountId', vList[0].bankAccounts[0].id);
+            }
           }
         }
       })
       .catch(() => {});
 
-    if (initialPrId) {
+    if (initialPoId) {
+      loadPoDetails(initialPoId);
+    } else if (initialPrId) {
       loadPrItems(initialPrId);
     }
-  }, [initialPrId]);
+  }, [initialPrId, initialPoId]);
+
+  const loadPoDetails = async (poId: string) => {
+    try {
+      const res = await poApi.getById(poId);
+      const po = res.data;
+      if (po) {
+        setEditingPoNumber(po.poNumber);
+        setSelectedVendorId(po.vendorId);
+        form.setFieldsValue({
+          vendorId: po.vendorId,
+          vendorBankAccountId: po.vendorBankAccountId,
+          paymentTermType: po.paymentTermType || 'PAY_AFTER_RECEIPT',
+          termsAndConditions: po.termsAndConditions,
+        });
+
+        if (po.items && po.items.length > 0) {
+          const poItems = po.items.map((it: any, idx: number) => ({
+            key: it.id || `item-${idx}`,
+            prItemId: it.prItemId,
+            itemName: it.itemName,
+            quantityOrdered: Number(it.quantityOrdered),
+            uom: it.uom,
+            unitPrice: Number(it.unitPrice),
+          }));
+          setItems(poItems);
+        }
+        setTaxAmount(Number(po.taxAmount) || 0);
+      }
+    } catch (err: any) {
+      notification.error({ message: 'Gagal memuat detail PO untuk diedit', description: err.message });
+    }
+  };
 
   const loadPrItems = async (prId: string) => {
     try {
@@ -253,12 +292,13 @@ export const PoCreateForm: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const payload: CreatePoPayload = {
+      const payload: CreatePoPayload & { reason?: string } = {
         vendorId: values.vendorId || selectedVendorId,
         vendorBankAccountId: values.vendorBankAccountId || availableBankAccounts[0]?.id || '30000000-0000-0000-0000-000000000001',
         paymentTermType: values.paymentTermType || 'PAY_AFTER_RECEIPT',
         taxAmount: Number(taxAmount) || 0,
         termsAndConditions: values.termsAndConditions || 'Standar syarat dan ketentuan pengadaan PT Nusanet.',
+        reason: values.reason || 'Revisi vendor / PO sebelum persetujuan',
         items: items.map((it, idx) => ({
           prItemId: it.prItemId || '41000000-0000-0000-0000-000000000001',
           lineNumber: idx + 1,
@@ -269,16 +309,24 @@ export const PoCreateForm: React.FC = () => {
         })),
       };
 
-      const res = await poApi.create(payload);
-      const poNum = res?.data?.poNumber || 'PO';
-      notification.success({
-        message: 'Purchase Order Berhasil Dibuat (R20)!',
-        description: `Nomor PO ${poNum} telah tersimpan dan siap untuk disetujui serta diterbitkan resmi (R24).`,
-      });
+      if (isEditMode && initialPoId) {
+        await poApi.update(initialPoId, payload);
+        notification.success({
+          message: 'Purchase Order Berhasil Direvisi!',
+          description: `PO ${editingPoNumber || initialPoId} berhasil diperbarui. Status persetujuan telah diatur ulang ke Draft untuk ditinjau ulang.`,
+        });
+      } else {
+        const res = await poApi.create(payload);
+        const poNum = res?.data?.poNumber || 'PO';
+        notification.success({
+          message: 'Purchase Order Berhasil Dibuat (R20)!',
+          description: `Nomor PO ${poNum} telah tersimpan dan siap untuk disetujui serta diterbitkan resmi (R24).`,
+        });
+      }
       navigate('/po');
     } catch (err: any) {
-      const errMsg = err?.response?.data?.detail || err?.response?.data?.title || err?.message || 'Gagal membuat PO';
-      notification.error({ message: 'Pembuatan PO Ditolak Sistem', description: errMsg });
+      const errMsg = err?.response?.data?.detail || err?.response?.data?.title || err?.message || 'Gagal menyimpan PO';
+      notification.error({ message: 'Operasi PO Ditolak Sistem', description: errMsg });
     } finally {
       setSubmitting(false);
     }
@@ -367,13 +415,13 @@ export const PoCreateForm: React.FC = () => {
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
       <PageHeader
-        title="Penerbitan Surat Pesanan Baru (Purchase Order - R20–R24)"
-        subtitle="Buat dan terbitkan PO resmi kepada vendor terverifikasi berdasarkan PR yang telah disetujui."
+        title={isEditMode ? `Revisi Surat Pesanan (${editingPoNumber || 'PO'})` : "Penerbitan Surat Pesanan Baru (Purchase Order - R20–R24)"}
+        subtitle={isEditMode ? "Ubah vendor, rekening bank, termin pembayaran, atau rincian item sebelum PO disetujui / diterbitkan." : "Buat dan terbitkan PO resmi kepada vendor terverifikasi berdasarkan PR yang telah disetujui."}
         icon={<FileTextOutlined style={{ color: token.colorPrimary }} />}
         breadcrumbs={[
           { title: 'Beranda', href: '/dashboard' },
           { title: 'Katalog PO', href: '/po' },
-          { title: 'Buat PO Baru' },
+          { title: isEditMode ? 'Revisi PO' : 'Buat PO Baru' },
         ]}
         extra={
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/po')}>
@@ -550,6 +598,21 @@ export const PoCreateForm: React.FC = () => {
           </Row>
         </Card>
 
+        {isEditMode && (
+          <Card title="Alasan Revisi / Penggantian Vendor (Audit Trail Log)" style={{ marginBottom: 24 }}>
+            <Form.Item
+              name="reason"
+              label="Catatan Alasan Perubahan"
+              rules={[{ required: true, message: 'Alasan perubahan/revisi PO wajib diisi untuk kepatuhan audit!' }]}
+            >
+              <TextArea
+                rows={3}
+                placeholder="Contoh: Vendor A stok habis, pesanan dialihkan ke Vendor B yang memiliki ketersediaan stok ready."
+              />
+            </Form.Item>
+          </Card>
+        )}
+
         <Space size={12}>
           <Button
             type="primary"
@@ -558,7 +621,7 @@ export const PoCreateForm: React.FC = () => {
             icon={<CheckCircleOutlined />}
             loading={submitting}
           >
-            Simpan & Terbitkan PO (R20)
+            {isEditMode ? 'Simpan Revisi PO & Reset Approval' : 'Simpan & Terbitkan PO (R20)'}
           </Button>
           <Button size="large" onClick={() => navigate('/po')} disabled={submitting}>
             Batal

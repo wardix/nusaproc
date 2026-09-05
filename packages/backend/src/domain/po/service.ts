@@ -4,7 +4,9 @@ import { PrRepository } from '../pr/repository';
 import { VendorRepository, ensureDefaultVendors } from '../vendor/repository';
 import {
   createPoSchema,
+  updatePoSchema,
   type CreatePoInput,
+  type UpdatePoInput,
   type AmendPoInput,
   type PoWithDetails,
   type PurchaseOrderRecord,
@@ -12,8 +14,9 @@ import {
 } from './types';
 import { validateSodAction } from '../sod/validator';
 import { createPoPdfDocument } from '../../services/pdf';
+import { recordAuditTrailEntry } from '../audit/service';
 
-export type { CreatePoInput, AmendPoInput, PoWithDetails, PurchaseOrderRecord, PoAmendmentHistoryRecord };
+export type { CreatePoInput, UpdatePoInput, AmendPoInput, PoWithDetails, PurchaseOrderRecord, PoAmendmentHistoryRecord };
 
 function generatePoNumber(): string {
   const dateStr = new Date().toISOString().slice(0, 7).replace('-', '');
@@ -179,13 +182,194 @@ export async function updatePurchaseOrderDirect(
   }
 
   // R26: Issued PO cannot be edited directly
-  if (po.status === 'ISSUED' || po.status === 'AMENDED') {
+  if (po.status === 'ISSUED' || po.status === 'AMENDED' || po.status === 'COMPLETED' || po.status === 'CANCELLED') {
     throw new Error(
       'PO yang telah terbit (ISSUED) tidak dapat diedit langsung, wajib melalui mekanisme amendemen resmi (R26).'
     );
   }
 
   return await repo.updatePoDirect(poId, fields);
+}
+
+export async function updatePurchaseOrder(input: UpdatePoInput): Promise<PoWithDetails> {
+  const validated = updatePoSchema.parse(input);
+  const poId = input.poId;
+
+  return await withTransaction(async (tx) => {
+    const repo = new PoRepository(tx);
+    const prRepo = new PrRepository(tx);
+    const vendorRepo = new VendorRepository(tx);
+
+    const po = await repo.findPoById(poId);
+    if (!po) {
+      throw new Error(`Purchase Order '${poId}' tidak ditemukan.`);
+    }
+
+    // R26: Issued PO cannot be edited directly
+    if (po.status === 'ISSUED' || po.status === 'AMENDED' || po.status === 'COMPLETED' || po.status === 'CANCELLED') {
+      throw new Error(
+        'PO yang telah terbit (ISSUED) tidak dapat diedit langsung, wajib melalui mekanisme amendemen resmi (R26).'
+      );
+    }
+
+    const targetVendorId = validated.vendorId || po.vendorId;
+    const targetBankAccountId = validated.vendorBankAccountId || po.vendorBankAccountId;
+
+    let vendor = await vendorRepo.findVendorById(targetVendorId);
+    if (!vendor) {
+      await ensureDefaultVendors();
+      vendor = await vendorRepo.findVendorById(targetVendorId);
+    }
+    if (!vendor) {
+      throw new Error(`Vendor dengan ID '${targetVendorId}' tidak ditemukan dalam sistem.`);
+    }
+    if (vendor.status === 'BLACKLISTED') {
+      throw new Error(`Perubahan PO ditolak (R65): Vendor '${vendor.name}' berstatus BLACKLISTED.`);
+    }
+
+    let bankAccount = await vendorRepo.findBankAccountById(targetBankAccountId);
+    if (!bankAccount) {
+      await ensureDefaultVendors();
+      bankAccount = await vendorRepo.findBankAccountById(targetBankAccountId);
+    }
+    if (!bankAccount) {
+      throw new Error(`Rekening bank vendor dengan ID '${targetBankAccountId}' tidak ditemukan.`);
+    }
+    if (bankAccount.vendorId !== targetVendorId) {
+      throw new Error(`Rekening bank yang dipilih tidak terdaftar untuk vendor '${vendor.name}'.`);
+    }
+
+    let subtotalAmount = po.subtotalAmount;
+    let taxAmount = validated.taxAmount !== undefined ? Number(validated.taxAmount) : po.taxAmount;
+
+    // If items are provided, recalculate fulfillment and update po_items
+    if (validated.items && validated.items.length > 0) {
+      const existingItems = await repo.findPoItems(poId);
+      const oldQtyByPrItemId = new Map<string, number>();
+      for (const item of existingItems) {
+        const current = oldQtyByPrItemId.get(item.prItemId) || 0;
+        oldQtyByPrItemId.set(item.prItemId, current + Number(item.quantityOrdered));
+      }
+
+      const newQtyByPrItemId = new Map<string, number>();
+      for (const item of validated.items) {
+        const current = newQtyByPrItemId.get(item.prItemId) || 0;
+        newQtyByPrItemId.set(item.prItemId, current + Number(item.quantityOrdered));
+      }
+
+      // Check each new item against PR remaining quantity
+      for (const [prItemId, newQty] of newQtyByPrItemId.entries()) {
+        const prItem = await prRepo.findItemById(prItemId);
+        if (!prItem) {
+          throw new Error(`PR Item '${prItemId}' tidak ditemukan.`);
+        }
+        const pr = await prRepo.findById(prItem.prId);
+        if (pr && pr.status !== 'APPROVED') {
+          throw new Error(`Revisi PO ditolak: Purchase Request '${pr.prNumber}' belum berstatus APPROVED.`);
+        }
+
+        const oldQty = oldQtyByPrItemId.get(prItemId) || 0;
+        const remaining = Number(prItem.quantityRequested) - Number(prItem.quantityOrdered) + oldQty;
+        if (newQty > remaining) {
+          throw new Error(
+            `Revisi PO ditolak: Kuantitas pesanan item '${prItem.itemName}' (${newQty} ${prItem.uom}) melebihi sisa kuantitas PR yang tersedia (${Math.max(0, remaining)} ${prItem.uom}).`
+          );
+        }
+
+        const delta = newQty - oldQty;
+        if (delta !== 0) {
+          await prRepo.incrementItemQuantityOrdered(prItemId, delta);
+        }
+      }
+
+      // Any PR item that was in old but not in new: restore quantity
+      for (const [prItemId, oldQty] of oldQtyByPrItemId.entries()) {
+        if (!newQtyByPrItemId.has(prItemId)) {
+          await prRepo.incrementItemQuantityOrdered(prItemId, -oldQty);
+        }
+      }
+
+      await repo.deletePoItems(poId);
+
+      subtotalAmount = 0;
+      const itemsToInsert = validated.items.map((item, idx) => {
+        const qty = Number(item.quantityOrdered);
+        const price = Number(item.unitPrice);
+        subtotalAmount += qty * price;
+
+        return {
+          id: crypto.randomUUID(),
+          poId,
+          prItemId: item.prItemId,
+          lineNumber: item.lineNumber || idx + 1,
+          itemName: item.itemName,
+          quantityOrdered: qty,
+          uom: item.uom,
+          unitPrice: price,
+        };
+      });
+
+      await repo.insertPoItems(itemsToInsert);
+    }
+
+    const grandTotalAmount = subtotalAmount + taxAmount;
+
+    // Reset approval when vendor, items, terms, or amounts are revised
+    await repo.updatePoDraft(poId, {
+      vendorId: targetVendorId,
+      vendorBankAccountId: targetBankAccountId,
+      paymentTermType: validated.paymentTermType || po.paymentTermType,
+      termsAndConditions: validated.termsAndConditions !== undefined ? validated.termsAndConditions : po.termsAndConditions,
+      subtotalAmount,
+      taxAmount,
+      grandTotalAmount,
+      resetApproval: true,
+    });
+
+    // Record Audit Trail
+    try {
+      await recordAuditTrailEntry({
+        actorId: input.userId,
+        actorRole: input.userRole || 'ACCOUNT_PAYABLE',
+        actionType: 'PO_UPDATED',
+        entityName: 'purchase_order',
+        entityId: poId,
+        oldState: {
+          vendorId: po.vendorId,
+          vendorName: po.vendorName,
+          vendorBankAccountId: po.vendorBankAccountId,
+          paymentTermType: po.paymentTermType,
+          grandTotalAmount: po.grandTotalAmount,
+          status: po.status,
+          approvedBy: po.approvedBy,
+        },
+        newState: {
+          vendorId: targetVendorId,
+          vendorName: vendor.name,
+          vendorBankAccountId: targetBankAccountId,
+          paymentTermType: validated.paymentTermType || po.paymentTermType,
+          grandTotalAmount,
+          status: 'DRAFT',
+          approvedBy: null,
+        },
+        justification: input.reason || 'Perubahan Vendor / Spesifikasi PO sebelum persetujuan (Pre-Approval Revision)',
+        ipAddress: input.ipAddress || '127.0.0.1',
+        userAgent: input.userAgent || 'NusaProc-Internal',
+      });
+    } catch {
+      // Non-blocking audit log
+    }
+
+    const updatedPo = await repo.findPoById(poId);
+    const updatedItems = await repo.findPoItems(poId);
+    const amendments = await repo.findAmendmentHistories(poId);
+
+    return {
+      ...(updatedPo as PurchaseOrderRecord),
+      items: updatedItems,
+      amendments,
+    };
+  });
 }
 
 export async function amendPurchaseOrder(input: AmendPoInput): Promise<PoAmendmentHistoryRecord> {

@@ -213,6 +213,57 @@ export class PoRepository {
     return rows[0] as unknown as PurchaseOrderRecord;
   }
 
+  async updatePoDraft(
+    id: string,
+    updates: {
+      vendorId?: string;
+      vendorBankAccountId?: string;
+      paymentTermType?: string;
+      termsAndConditions?: string;
+      subtotalAmount?: number;
+      taxAmount?: number;
+      grandTotalAmount?: number;
+      resetApproval?: boolean;
+    }
+  ): Promise<PurchaseOrderRecord> {
+    const rows = await this.db`
+      UPDATE purchase_order
+      SET
+        vendor_id = COALESCE(${updates.vendorId ?? null}, vendor_id),
+        vendor_bank_account_id = COALESCE(${updates.vendorBankAccountId ?? null}, vendor_bank_account_id),
+        payment_term_type = COALESCE(${updates.paymentTermType ?? null}, payment_term_type),
+        terms_and_conditions = COALESCE(${updates.termsAndConditions ?? null}, terms_and_conditions),
+        subtotal_amount = COALESCE(${updates.subtotalAmount ?? null}, subtotal_amount),
+        tax_amount = COALESCE(${updates.taxAmount ?? null}, tax_amount),
+        grand_total_amount = COALESCE(${updates.grandTotalAmount ?? null}, grand_total_amount),
+        approved_by = CASE WHEN ${updates.resetApproval === true} THEN NULL ELSE approved_by END,
+        approved_at = CASE WHEN ${updates.resetApproval === true} THEN NULL ELSE approved_at END,
+        status = CASE WHEN ${updates.resetApproval === true} THEN 'DRAFT'::po_status_enum ELSE status END,
+        updated_at = clock_timestamp()
+      WHERE id = ${id}
+      RETURNING
+        id, po_number AS "poNumber", vendor_id AS "vendorId",
+        vendor_bank_account_id AS "vendorBankAccountId", payment_term_type AS "paymentTermType",
+        version_number AS "versionNumber", status,
+        subtotal_amount::float AS "subtotalAmount", tax_amount::float AS "taxAmount",
+        grand_total_amount::float AS "grandTotalAmount",
+        terms_and_conditions AS "termsAndConditions",
+        created_by AS "createdBy", approved_by AS "approvedBy",
+        approved_at::text AS "approvedAt", issued_at::text AS "issuedAt",
+        created_at::text AS "createdAt", updated_at::text AS "updatedAt"
+    `;
+
+    return rows[0] as unknown as PurchaseOrderRecord;
+  }
+
+  async deletePoItems(poId: string): Promise<void> {
+    await this.db`
+      DELETE FROM purchase_order_item
+      WHERE po_id = ${poId}
+    `;
+  }
+
+
   async createAmendmentHistory(history: {
     id: string;
     poId: string;
