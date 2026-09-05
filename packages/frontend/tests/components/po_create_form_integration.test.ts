@@ -34,4 +34,19 @@ describe('Purchase Order Creation Flow Integration', () => {
     expect(content).toContain("path: 'po/create'");
     expect(content).toContain('PoCreateForm');
   });
+
+  it('verifies PoCreateForm supports multi-PR selection and Multi-PR Item Picker consolidation', () => {
+    const content = readFileSync(poFormPath, 'utf-8');
+
+    // Multi-PR Select dropdown
+    expect(content).toContain('mode="multiple"');
+    expect(content).toContain('name="prIds"');
+    expect(content).toContain('handlePrsChange');
+    expect(content).toContain('loadPrItemsByIds');
+
+    // Multi-PR Item Picker Modal
+    expect(content).toContain('Multi-PR Item Picker');
+    expect(content).toContain('listUnfulfilledItems');
+    expect(content).toContain('handleAddSelectedPrItems');
+  });
 });

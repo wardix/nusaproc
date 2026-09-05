@@ -90,6 +90,7 @@ const DEFAULT_VENDORS: VendorOption[] = [
 interface PoItemRow {
   key: string;
   prItemId: string;
+  prId?: string;
   prNumber?: string;
   divisionName?: string;
   itemName: string;
@@ -109,7 +110,16 @@ export const PoCreateForm: React.FC = () => {
 
   const [form] = Form.useForm();
   const [approvedPrs, setApprovedPrs] = useState<any[]>([]);
-  const [selectedPrId, setSelectedPrId] = useState<string>(initialPrId);
+
+  // Collect any initial prId or prIds from URL query
+  const prIdParams = searchParams.getAll('prId');
+  const prIdsParam = searchParams.get('prIds')?.split(',').filter(Boolean) || [];
+  const initialPrIds = useMemo(
+    () => Array.from(new Set([...prIdParams, ...prIdsParam])),
+    [searchParams]
+  );
+
+  const [selectedPrIds, setSelectedPrIds] = useState<string[]>(initialPrIds);
   const [vendors, setVendors] = useState<VendorOption[]>(DEFAULT_VENDORS);
   const [selectedVendorId, setSelectedVendorId] = useState<string>(DEFAULT_VENDORS[0].id);
   const [editingPoNumber, setEditingPoNumber] = useState<string>('');
@@ -165,10 +175,10 @@ export const PoCreateForm: React.FC = () => {
 
     if (initialPoId) {
       loadPoDetails(initialPoId);
-    } else if (initialPrId) {
-      loadPrItems(initialPrId);
+    } else if (initialPrIds.length > 0) {
+      loadPrItemsByIds(initialPrIds);
     }
-  }, [initialPrId, initialPoId]);
+  }, [initialPoId]);
 
   const loadPoDetails = async (poId: string) => {
     try {
@@ -202,52 +212,77 @@ export const PoCreateForm: React.FC = () => {
     }
   };
 
-  const loadPrItems = async (prId: string) => {
-    try {
-      const res = await prApi.getById(prId);
-      const pr = res.data;
-      if (pr) {
-        form.setFieldsValue({
-          paymentTermType: pr.paymentTermType || 'PAY_AFTER_RECEIPT',
-        });
-        if (pr.items && pr.items.length > 0) {
-          const itemsWithRemaining = pr.items
-            .filter((it: any) => {
-              const req = Number(it.quantityRequested) || 0;
-              const ord = Number(it.quantityOrdered) || 0;
-              return (req - ord) > 0;
-            })
-            .map((it: any, idx: number) => {
-              const req = Number(it.quantityRequested) || 0;
-              const ord = Number(it.quantityOrdered) || 0;
-              const remaining = Math.max(1, req - ord);
-              return {
-                key: it.id || `item-${idx}`,
-                prItemId: it.id || '41000000-0000-0000-0000-000000000001',
-                prNumber: pr.prNumber,
-                divisionName: pr.divisionName || pr.costCenter,
-                itemName: it.itemName,
-                quantityOrdered: remaining,
-                uom: it.uom || 'Unit',
-                unitPrice: Number(it.estimatedUnitPrice) || 0,
-              };
-            });
+  const loadPrItemsByIds = async (prIds: string[], append: boolean = false) => {
+    if (prIds.length === 0) {
+      if (!append) setItems([]);
+      return;
+    }
 
-          if (itemsWithRemaining.length === 0) {
-            notification.warning({
-              message: 'Seluruh Item PR Sudah Dipesan',
-              description: `Seluruh item dalam Purchase Request '${pr.prNumber}' sudah diterbitkan Purchase Order (PO).`,
-            });
-          } else {
-            setItems(itemsWithRemaining);
-            const subtotal = itemsWithRemaining.reduce(
-              (acc: number, curr: PoItemRow) => acc + curr.quantityOrdered * curr.unitPrice,
-              0
-            );
-            setTaxAmount(Math.round(subtotal * 0.11));
+    try {
+      const results = await Promise.all(
+        prIds.map((id) => prApi.getById(id).catch(() => null))
+      );
+
+      const newRows: PoItemRow[] = [];
+      let foundAnyItems = false;
+
+      results.forEach((res) => {
+        const pr = res?.data;
+        if (pr) {
+          if (!form.getFieldValue('paymentTermType') && pr.paymentTermType) {
+            form.setFieldValue('paymentTermType', pr.paymentTermType);
+          }
+          if (pr.items && pr.items.length > 0) {
+            const itemsWithRemaining = pr.items
+              .filter((it: any) => {
+                const req = Number(it.quantityRequested) || 0;
+                const ord = Number(it.quantityOrdered) || 0;
+                return req - ord > 0;
+              })
+              .map((it: any, idx: number) => {
+                const req = Number(it.quantityRequested) || 0;
+                const ord = Number(it.quantityOrdered) || 0;
+                const remaining = Math.max(1, req - ord);
+                foundAnyItems = true;
+                return {
+                  key: it.id || `item-${pr.id}-${idx}`,
+                  prItemId: it.id || '41000000-0000-0000-0000-000000000001',
+                  prId: pr.id,
+                  prNumber: pr.prNumber,
+                  divisionName: pr.divisionName || pr.costCenter,
+                  itemName: it.itemName,
+                  quantityOrdered: remaining,
+                  uom: it.uom || 'Unit',
+                  unitPrice: Number(it.estimatedUnitPrice) || 0,
+                };
+              });
+            newRows.push(...itemsWithRemaining);
           }
         }
+      });
+
+      if (results.length === 1 && !foundAnyItems && results[0]?.data) {
+        notification.warning({
+          message: 'Seluruh Item PR Sudah Dipesan',
+          description: `Seluruh item dalam Purchase Request '${results[0].data.prNumber}' sudah diterbitkan Purchase Order (PO).`,
+        });
       }
+
+      setItems((prev) => {
+        const base = append
+          ? prev.filter((it) => it.itemName !== 'Core Edge Router 10G' || prev.length > 1)
+          : [];
+        const existingPrItemIds = new Set(base.map((it) => it.prItemId));
+        const filteredNew = newRows.filter((it) => !existingPrItemIds.has(it.prItemId));
+        const merged = [...base, ...filteredNew];
+
+        const subtotal = merged.reduce(
+          (acc, curr) => acc + (Number(curr.quantityOrdered) || 0) * (Number(curr.unitPrice) || 0),
+          0
+        );
+        setTaxAmount(Math.round(subtotal * 0.11));
+        return merged.length > 0 ? merged : prev;
+      });
     } catch {
       // Keep default items on error
     }
@@ -284,6 +319,7 @@ export const PoCreateForm: React.FC = () => {
       .map((item, idx) => ({
         key: item.id || `pr-item-${Date.now()}-${idx}`,
         prItemId: item.id,
+        prId: item.prId,
         prNumber: item.prNumber,
         divisionName: item.divisionName || item.costCenter,
         itemName: item.itemName,
@@ -300,6 +336,12 @@ export const PoCreateForm: React.FC = () => {
 
     const updated = [...currentItems, ...newRows];
     setItems(updated);
+
+    // Sync newly picked PR IDs into selectedPrIds multi-select
+    const pickedPrIds = selectedPickerItems.map((it) => it.prId).filter(Boolean);
+    const mergedPrIds = Array.from(new Set([...selectedPrIds, ...pickedPrIds]));
+    setSelectedPrIds(mergedPrIds);
+    form.setFieldValue('prIds', mergedPrIds);
 
     const subtotal = updated.reduce(
       (acc, curr) => acc + (Number(curr.quantityOrdered) || 0) * (Number(curr.unitPrice) || 0),
@@ -327,11 +369,77 @@ export const PoCreateForm: React.FC = () => {
     );
   }, [unfulfilledPrItems, pickerSearch]);
 
-  const handlePrChange = (prId: string) => {
-    setSelectedPrId(prId);
-    if (prId) {
-      loadPrItems(prId);
+  const handlePrsChange = async (newPrIds: string[]) => {
+    const previousPrIds = selectedPrIds;
+    setSelectedPrIds(newPrIds);
+    form.setFieldValue('prIds', newPrIds);
+
+    const addedPrIds = newPrIds.filter((id) => !previousPrIds.includes(id));
+    const removedPrIds = previousPrIds.filter((id) => !newPrIds.includes(id));
+
+    let updatedItems = items;
+
+    // 1. Remove items belonging to removed PRs
+    if (removedPrIds.length > 0) {
+      const removedSet = new Set(removedPrIds);
+      updatedItems = updatedItems.filter((it) => !it.prId || !removedSet.has(it.prId));
     }
+
+    // 2. Add items from newly selected PRs
+    if (addedPrIds.length > 0) {
+      try {
+        const results = await Promise.all(
+          addedPrIds.map((id) => prApi.getById(id).catch(() => null))
+        );
+
+        const newRows: PoItemRow[] = [];
+        results.forEach((res) => {
+          const pr = res?.data;
+          if (pr && pr.items && pr.items.length > 0) {
+            const itemsWithRemaining = pr.items
+              .filter((it: any) => {
+                const req = Number(it.quantityRequested) || 0;
+                const ord = Number(it.quantityOrdered) || 0;
+                return req - ord > 0;
+              })
+              .map((it: any, idx: number) => {
+                const req = Number(it.quantityRequested) || 0;
+                const ord = Number(it.quantityOrdered) || 0;
+                const remaining = Math.max(1, req - ord);
+                return {
+                  key: it.id || `item-${pr.id}-${idx}`,
+                  prItemId: it.id,
+                  prId: pr.id,
+                  prNumber: pr.prNumber,
+                  divisionName: pr.divisionName || pr.costCenter,
+                  itemName: it.itemName,
+                  quantityOrdered: remaining,
+                  uom: it.uom || 'Unit',
+                  unitPrice: Number(it.estimatedUnitPrice) || 0,
+                };
+              });
+            newRows.push(...itemsWithRemaining);
+          }
+        });
+
+        // Filter out default placeholder item if unmodified
+        const base = updatedItems.filter(
+          (it) => it.itemName !== 'Core Edge Router 10G' || updatedItems.length > 1
+        );
+        const existingPrItemIds = new Set(base.map((it) => it.prItemId));
+        const filteredNew = newRows.filter((it) => !existingPrItemIds.has(it.prItemId));
+        updatedItems = [...base, ...filteredNew];
+      } catch {
+        // Keep existing on error
+      }
+    }
+
+    setItems(updatedItems);
+    const subtotal = updatedItems.reduce(
+      (acc, curr) => acc + (Number(curr.quantityOrdered) || 0) * (Number(curr.unitPrice) || 0),
+      0
+    );
+    setTaxAmount(Math.round(subtotal * 0.11));
   };
 
   const currentVendor = vendors.find((v) => v.id === selectedVendorId) || vendors[0];
@@ -541,7 +649,7 @@ export const PoCreateForm: React.FC = () => {
         form={form}
         layout="vertical"
         initialValues={{
-          prId: selectedPrId || undefined,
+          prIds: selectedPrIds,
           vendorId: selectedVendorId,
           vendorBankAccountId: availableBankAccounts[0]?.id,
           paymentTermType: 'PAY_AFTER_RECEIPT',
@@ -563,16 +671,42 @@ export const PoCreateForm: React.FC = () => {
 
           <Row gutter={16}>
             <Col xs={24} sm={12}>
-              <Form.Item name="prId" label="Pilih Purchase Request yang Disetujui (Opsional)">
+              <Form.Item
+                name="prIds"
+                label={
+                  <Space>
+                    <span>Pilih Purchase Request yang Disetujui</span>
+                    <Tag color="cyan">Multi-PR Konsolidasi</Tag>
+                  </Space>
+                }
+                tooltip="Anda dapat memilih satu atau beberapa PR yang telah APPROVED untuk digabungkan ke dalam 1 PO."
+              >
                 <Select
-                  placeholder="Pilih PR yang sudah APPROVED"
+                  mode="multiple"
+                  placeholder="Pilih satu atau beberapa PR (Multi-PR)"
                   allowClear
-                  value={selectedPrId}
-                  onChange={handlePrChange}
+                  value={selectedPrIds}
+                  onChange={handlePrsChange}
+                  optionFilterProp="label"
+                  tagRender={(props) => {
+                    const { label, closable, onClose } = props;
+                    return (
+                      <Tag color="blue" closable={closable} onClose={onClose} style={{ marginRight: 3 }}>
+                        {label}
+                      </Tag>
+                    );
+                  }}
                 >
                   {approvedPrs.map((pr) => (
-                    <Select.Option key={pr.id} value={pr.id}>
-                      {pr.prNumber} — {pr.costCenter} ({formatRupiah(Number(pr.totalEstimatedAmount))})
+                    <Select.Option key={pr.id} value={pr.id} label={pr.prNumber}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>
+                          <strong>{pr.prNumber}</strong> — {pr.costCenter || pr.divisionName}
+                        </span>
+                        <span style={{ color: token.colorTextSecondary, fontSize: 12 }}>
+                          {formatRupiah(Number(pr.totalEstimatedAmount))}
+                        </span>
+                      </div>
                     </Select.Option>
                   ))}
                 </Select>
