@@ -29,6 +29,8 @@ export interface PurchaseRequestRow {
   paymentTermType: string;
   status: string;
   totalEstimatedAmount: number;
+  remainingQuantity?: number;
+  poCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -189,7 +191,7 @@ export const PrListPage: React.FC = () => {
     {
       title: 'Aksi',
       key: 'action',
-      render: (_: unknown, record: { id: string; requesterId?: string; status: string }) => {
+      render: (_: unknown, record: PurchaseRequestRow) => {
         const isSelfRequester = Boolean(record.requesterId && user?.id && record.requesterId === user.id);
 
         return (
@@ -243,14 +245,18 @@ export const PrListPage: React.FC = () => {
               </>
             )}
             {record.status === 'APPROVED' && (
-              <Button
-                type="dashed"
-                size="small"
-                icon={<ShoppingCartOutlined />}
-                onClick={() => navigate(`/po/create?prId=${record.id}`)}
-              >
-                Terbitkan PO
-              </Button>
+              record.remainingQuantity !== undefined && record.remainingQuantity <= 0 ? (
+                <Tag color="cyan">PO Sudah Diterbitkan</Tag>
+              ) : (
+                <Button
+                  type="dashed"
+                  size="small"
+                  icon={<ShoppingCartOutlined />}
+                  onClick={() => navigate(`/po/create?prId=${record.id}`)}
+                >
+                  Terbitkan PO
+                </Button>
+              )
             )}
           </Space>
         );
