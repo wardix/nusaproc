@@ -187,4 +187,108 @@ export class VendorRepository {
       WHERE vendor_id = ${vendorId} AND id != ${currentAccountId} AND is_primary = TRUE
     `;
   }
+
+  async listVendors(params?: { status?: VendorStatus; search?: string }): Promise<Array<VendorRecord & { bankAccounts?: VendorBankAccountRecord[] }>> {
+    let query = sql`
+      SELECT 
+        id, vendor_code AS "vendorCode", name,
+        tax_identification_number AS "taxIdentificationNumber",
+        is_pkp AS "isPkp", status,
+        created_by AS "createdBy",
+        approved_by_1 AS "approvedBy1", approved_at_1::text AS "approvedAt1",
+        approved_by_2 AS "approvedBy2", approved_at_2::text AS "approvedAt2",
+        created_at::text AS "createdAt", updated_at::text AS "updatedAt"
+      FROM vendor
+      WHERE 1=1
+    `;
+
+    if (params?.status) {
+      query = sql`${query} AND status = ${params.status}`;
+    }
+    if (params?.search) {
+      const s = `%${params.search}%`;
+      query = sql`${query} AND (name ILIKE ${s} OR vendor_code ILIKE ${s})`;
+    }
+
+    query = sql`${query} ORDER BY created_at DESC`;
+    const rows = await query;
+    const vendors = rows as unknown as VendorRecord[];
+
+    const result: Array<VendorRecord & { bankAccounts?: VendorBankAccountRecord[] }> = [];
+    for (const v of vendors) {
+      const bankAccounts = await this.listBankAccountsByVendorId(v.id);
+      result.push({
+        ...v,
+        bankAccounts,
+      });
+    }
+
+    return result;
+  }
+
+  async listBankAccountsByVendorId(vendorId: string): Promise<VendorBankAccountRecord[]> {
+    const rows = await this.db`
+      SELECT 
+        id, vendor_id AS "vendorId", bank_name AS "bankName", bank_code AS "bankCode",
+        account_number_encrypted AS "accountNumberEncrypted",
+        account_number_masked AS "accountNumberMasked",
+        account_holder_name AS "accountHolderName", status,
+        verified_by_1 AS "verifiedBy1", verified_at_1::text AS "verifiedAt1",
+        verified_by_2 AS "verifiedBy2", verified_at_2::text AS "verifiedAt2",
+        rejection_reason AS "rejectionReason",
+        is_primary AS "isPrimary",
+        created_at::text AS "createdAt"
+      FROM vendor_bank_account
+      WHERE vendor_id = ${vendorId}
+      ORDER BY is_primary DESC, created_at DESC
+    `;
+    return rows as unknown as VendorBankAccountRecord[];
+  }
+}
+
+export async function ensureDefaultVendors(db: TransactionClient = sql): Promise<void> {
+  const vendor1Id = '20000000-0000-0000-0000-000000000001';
+  const vendor2Id = '20000000-0000-0000-0000-000000000002';
+  const bank1Id = '30000000-0000-0000-0000-000000000001';
+  const bank2Id = '30000000-0000-0000-0000-000000000002';
+
+  const users = await db`SELECT id FROM app_user LIMIT 1`;
+  if (users.length === 0) return;
+  const defaultUserId = users[0].id;
+
+  try {
+    await db`
+      INSERT INTO vendor (
+        id, vendor_code, name, tax_identification_number, is_pkp, status,
+        created_by
+      ) VALUES 
+        (
+          ${vendor1Id}, 'VEND-FIBER-001', 'PT Fiber Optik Nusantara', '01.234.567.8-012.000', TRUE, 'APPROVED',
+          ${defaultUserId}
+        ),
+        (
+          ${vendor2Id}, 'VEND-MITRA-002', 'PT Mitra Solusi Jaringan', '02.345.678.9-013.000', TRUE, 'APPROVED',
+          ${defaultUserId}
+        )
+      ON CONFLICT (id) DO NOTHING;
+    `;
+
+    await db`
+      INSERT INTO vendor_bank_account (
+        id, vendor_id, bank_name, bank_code, account_number_encrypted,
+        account_number_masked, account_holder_name, status, is_primary
+      ) VALUES
+        (
+          ${bank1Id}, ${vendor1Id}, 'BCA', '014', 'MTEyMzQ1Njc4OTA=',
+          '******7890', 'PT Fiber Optik Nusantara', 'VERIFIED', TRUE
+        ),
+        (
+          ${bank2Id}, ${vendor2Id}, 'Mandiri', '008', 'MTA5ODc2NTQzMjEw=',
+          '******0040', 'PT Mitra Solusi Jaringan', 'VERIFIED', TRUE
+        )
+      ON CONFLICT (id) DO NOTHING;
+    `;
+  } catch {
+    // Ignore seed conflict
+  }
 }

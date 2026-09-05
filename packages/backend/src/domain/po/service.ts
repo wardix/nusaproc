@@ -1,6 +1,6 @@
 import { withTransaction } from '../../db/client';
 import { PoRepository } from './repository';
-import { VendorRepository } from '../vendor/repository';
+import { VendorRepository, ensureDefaultVendors } from '../vendor/repository';
 import {
   createPoSchema,
   type CreatePoInput,
@@ -26,10 +26,35 @@ export async function createPurchaseOrder(input: CreatePoInput): Promise<Purchas
   const poNumber = generatePoNumber();
 
   const vendorRepo = new VendorRepository();
-  const vendor = await vendorRepo.findVendorById(validated.vendorId);
-  if (vendor && vendor.status === 'BLACKLISTED') {
+  let vendor = await vendorRepo.findVendorById(validated.vendorId);
+  if (!vendor) {
+    await ensureDefaultVendors();
+    vendor = await vendorRepo.findVendorById(validated.vendorId);
+  }
+  if (!vendor) {
+    throw new Error(
+      `Vendor dengan ID '${validated.vendorId}' tidak ditemukan dalam sistem.`
+    );
+  }
+  if (vendor.status === 'BLACKLISTED') {
     throw new Error(
       `Pembuatan PO ditolak (R65): Vendor '${vendor.name}' berstatus BLACKLISTED.`
+    );
+  }
+
+  let bankAccount = await vendorRepo.findBankAccountById(validated.vendorBankAccountId);
+  if (!bankAccount) {
+    await ensureDefaultVendors();
+    bankAccount = await vendorRepo.findBankAccountById(validated.vendorBankAccountId);
+  }
+  if (!bankAccount) {
+    throw new Error(
+      `Rekening bank vendor dengan ID '${validated.vendorBankAccountId}' tidak ditemukan.`
+    );
+  }
+  if (bankAccount.vendorId !== validated.vendorId) {
+    throw new Error(
+      `Rekening bank yang dipilih tidak terdaftar untuk vendor '${vendor.name}'.`
     );
   }
 

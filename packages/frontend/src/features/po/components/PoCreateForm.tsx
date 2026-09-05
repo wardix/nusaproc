@@ -28,6 +28,7 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { poApi, type CreatePoPayload } from '../../../api/endpoints/po';
 import { prApi } from '../../../api/endpoints/pr';
+import { vendorApi } from '../../../api/endpoints/vendor';
 import { PageHeader } from '../../../components/common/PageHeader';
 import { formatRupiah } from '../../../utils/currency';
 
@@ -39,11 +40,11 @@ interface VendorOption {
   name: string;
   vendorCode: string;
   status: string;
-  bankAccounts: Array<{
+  bankAccounts?: Array<{
     id: string;
     bankName: string;
-    accountNumberMasked: string;
-    accountHolderName: string;
+    accountNumberMasked?: string;
+    accountHolderName?: string;
     status: string;
   }>;
 }
@@ -100,7 +101,7 @@ export const PoCreateForm: React.FC = () => {
   const [form] = Form.useForm();
   const [approvedPrs, setApprovedPrs] = useState<any[]>([]);
   const [selectedPrId, setSelectedPrId] = useState<string>(initialPrId);
-  const [vendors] = useState<VendorOption[]>(DEFAULT_VENDORS);
+  const [vendors, setVendors] = useState<VendorOption[]>(DEFAULT_VENDORS);
   const [selectedVendorId, setSelectedVendorId] = useState<string>(DEFAULT_VENDORS[0].id);
   const [items, setItems] = useState<PoItemRow[]>([
     {
@@ -122,6 +123,22 @@ export const PoCreateForm: React.FC = () => {
       .then((res) => {
         const prList = res.data || [];
         setApprovedPrs(prList);
+      })
+      .catch(() => {});
+
+    // Load dynamic approved vendors from backend
+    vendorApi
+      .list({ status: 'APPROVED' })
+      .then((res) => {
+        const vList = res.data || [];
+        if (vList.length > 0) {
+          setVendors(vList);
+          setSelectedVendorId(vList[0].id);
+          form.setFieldValue('vendorId', vList[0].id);
+          if (vList[0].bankAccounts && vList[0].bankAccounts.length > 0) {
+            form.setFieldValue('vendorBankAccountId', vList[0].bankAccounts[0].id);
+          }
+        }
       })
       .catch(() => {});
 
@@ -396,7 +413,7 @@ export const PoCreateForm: React.FC = () => {
                   onChange={(vId) => {
                     setSelectedVendorId(vId);
                     const v = vendors.find((vend) => vend.id === vId);
-                    if (v && v.bankAccounts.length > 0) {
+                    if (v && v.bankAccounts && v.bankAccounts.length > 0) {
                       form.setFieldValue('vendorBankAccountId', v.bankAccounts[0].id);
                     }
                   }}

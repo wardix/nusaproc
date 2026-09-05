@@ -3,6 +3,8 @@ import {
   createVendor,
   createVendorBankAccount,
   verifyBankAccountStage,
+  listVendors,
+  listVendorBankAccounts,
 } from '../vendor/service';
 import {
   createPurchaseOrder,
@@ -11,13 +13,27 @@ import {
   amendPurchaseOrder,
   generatePoPdf,
   getPurchaseOrderById,
+  listPurchaseOrders,
 } from './service';
 import { formatProblemDetails } from '../sod/errors';
 
 export function createPoAndVendorApp(): Hono {
   const app = new Hono();
 
-  // 1. Create Vendor
+  // 1. List Vendors
+  app.get('/vendors', async (c) => {
+    const status = c.req.query('status');
+    const search = c.req.query('search');
+    try {
+      const vendors = await listVendors({ status, search });
+      return c.json({ success: true, data: vendors });
+    } catch (err: unknown) {
+      const problem = formatProblemDetails(err, c.req.path);
+      return c.json(problem, (problem.status && problem.status >= 400 && problem.status < 600) ? (problem.status as any) : 400);
+    }
+  });
+
+  // 2. Create Vendor
   app.post('/vendors', async (c) => {
     const userId = c.get('authUser')?.userId || c.req.header('X-User-Id');
     if (!userId) {
@@ -32,11 +48,24 @@ export function createPoAndVendorApp(): Hono {
       });
       return c.json({ success: true, data: vendor }, 201);
     } catch (err: unknown) {
-      return c.json(formatProblemDetails(err, c.req.path), 400);
+      const problem = formatProblemDetails(err, c.req.path);
+      return c.json(problem, (problem.status && problem.status >= 400 && problem.status < 600) ? (problem.status as any) : 400);
     }
   });
 
-  // 2. Create Vendor Bank Account
+  // 3. List Vendor Bank Accounts
+  app.get('/vendors/:id/bank-accounts', async (c) => {
+    const vendorId = c.req.param('id');
+    try {
+      const bankAccounts = await listVendorBankAccounts(vendorId);
+      return c.json({ success: true, data: bankAccounts });
+    } catch (err: unknown) {
+      const problem = formatProblemDetails(err, c.req.path);
+      return c.json(problem, (problem.status && problem.status >= 400 && problem.status < 600) ? (problem.status as any) : 400);
+    }
+  });
+
+  // 4. Create Vendor Bank Account
   app.post('/vendors/:id/bank-accounts', async (c) => {
     const vendorId = c.req.param('id');
     try {
@@ -47,11 +76,12 @@ export function createPoAndVendorApp(): Hono {
       });
       return c.json({ success: true, data: bankAccount }, 201);
     } catch (err: unknown) {
-      return c.json(formatProblemDetails(err, c.req.path), 400);
+      const problem = formatProblemDetails(err, c.req.path);
+      return c.json(problem, (problem.status && problem.status >= 400 && problem.status < 600) ? (problem.status as any) : 400);
     }
   });
 
-  // 3. Verify Bank Account Stage 1 / Stage 2
+  // 5. Verify Bank Account Stage 1 / Stage 2
   app.post('/vendors/:vendorId/bank-accounts/:bankId/verify', async (c) => {
     const bankAccountId = c.req.param('bankId');
     const userId = c.get('authUser')?.userId || c.req.header('X-User-Id');
@@ -70,11 +100,12 @@ export function createPoAndVendorApp(): Hono {
       });
       return c.json({ success: true, data: account });
     } catch (err: unknown) {
-      return c.json(formatProblemDetails(err, c.req.path), 400);
+      const problem = formatProblemDetails(err, c.req.path);
+      return c.json(problem, (problem.status && problem.status >= 400 && problem.status < 600) ? (problem.status as any) : 400);
     }
   });
 
-  // 4. Create Purchase Order
+  // 6. Create Purchase Order
   app.post('/purchase-orders', async (c) => {
     const userId = c.get('authUser')?.userId || c.req.header('X-User-Id');
     if (!userId) {
@@ -89,33 +120,36 @@ export function createPoAndVendorApp(): Hono {
       });
       return c.json({ success: true, data: po }, 201);
     } catch (err: unknown) {
-      return c.json(formatProblemDetails(err, c.req.path), 400);
+      const problem = formatProblemDetails(err, c.req.path);
+      return c.json(problem, (problem.status && problem.status >= 400 && problem.status < 600) ? (problem.status as any) : 400);
     }
   });
 
-  // 5. List Purchase Orders
+  // 7. List Purchase Orders
   app.get('/purchase-orders', async (c) => {
     const status = c.req.query('status');
     try {
       const pos = await listPurchaseOrders({ status });
       return c.json({ success: true, data: pos });
     } catch (err: unknown) {
-      return c.json(formatProblemDetails(err, c.req.path), 400);
+      const problem = formatProblemDetails(err, c.req.path);
+      return c.json(problem, (problem.status && problem.status >= 400 && problem.status < 600) ? (problem.status as any) : 400);
     }
   });
 
-  // 6. Get Purchase Order Details
+  // 8. Get Purchase Order Details
   app.get('/purchase-orders/:id', async (c) => {
     const poId = c.req.param('id');
     try {
       const po = await getPurchaseOrderById(poId);
       return c.json({ success: true, data: po });
     } catch (err: unknown) {
-      return c.json(formatProblemDetails(err, c.req.path), 404);
+      const problem = formatProblemDetails(err, c.req.path);
+      return c.json(problem, 404);
     }
   });
 
-  // 6. Approve Purchase Order
+  // 9. Approve Purchase Order
   app.post('/purchase-orders/:id/approve', async (c) => {
     const poId = c.req.param('id');
     const userId = c.get('authUser')?.userId || c.req.header('X-User-Id');
@@ -128,7 +162,8 @@ export function createPoAndVendorApp(): Hono {
       const po = await approvePurchaseOrder(poId, userId);
       return c.json({ success: true, data: po });
     } catch (err: unknown) {
-      return c.json(formatProblemDetails(err, c.req.path), 400);
+      const problem = formatProblemDetails(err, c.req.path);
+      return c.json(problem, (problem.status && problem.status >= 400 && problem.status < 600) ? (problem.status as any) : 400);
     }
   });
 

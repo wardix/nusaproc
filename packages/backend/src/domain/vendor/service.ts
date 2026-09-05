@@ -130,3 +130,13 @@ export async function getVendorById(id: string): Promise<VendorRecord> {
   }
   return vendor;
 }
+
+export async function listVendors(params?: { status?: any; search?: string }): Promise<Array<VendorRecord & { bankAccounts?: VendorBankAccountRecord[] }>> {
+  const repo = new VendorRepository();
+  return await repo.listVendors(params);
+}
+
+export async function listVendorBankAccounts(vendorId: string): Promise<VendorBankAccountRecord[]> {
+  const repo = new VendorRepository();
+  return await repo.listBankAccountsByVendorId(vendorId);
+}

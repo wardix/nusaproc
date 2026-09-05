@@ -135,11 +135,34 @@ export function formatProblemDetails(error: unknown, instance?: string): Problem
     return error.toProblemDetails(instance);
   }
 
+  if (error && typeof error === 'object' && 'issues' in error && Array.isArray((error as any).issues)) {
+    const issues = (error as any).issues;
+    const detail = issues.map((i: any) => i.message).join(', ');
+    return {
+      type: 'https://nusaproc.nusanet.net.id/errors/validation-error',
+      title: 'Validation Error',
+      status: 400,
+      detail: detail || 'Data validasi tidak valid',
+      ...(instance ? { instance } : {}),
+    };
+  }
+
   const message = error instanceof Error ? error.message : String(error);
+  const isClientError =
+    message.includes('ditolak') ||
+    message.includes('tidak ditemukan') ||
+    message.includes('wajib') ||
+    message.includes('harus') ||
+    message.includes('Pelanggaran') ||
+    message.includes('tidak terdaftar') ||
+    message.includes('invalid') ||
+    message.includes('Invalid') ||
+    message.includes('violates');
+
   return {
-    type: 'https://nusaproc.nusanet.net.id/errors/internal-server-error',
-    title: 'Internal Server Error',
-    status: 500,
+    type: isClientError ? 'https://nusaproc.nusanet.net.id/errors/bad-request' : 'https://nusaproc.nusanet.net.id/errors/internal-server-error',
+    title: isClientError ? 'Bad Request' : 'Internal Server Error',
+    status: isClientError ? 400 : 500,
     detail: message,
     ...(instance ? { instance } : {}),
   };

@@ -15,6 +15,12 @@ export interface CreateBankAccountPayload {
 }
 
 export const vendorApi = {
+  list: (params?: { status?: string; search?: string }) =>
+    apiClient.get('/vendors', { params }).then((res) => res.data),
+
+  listBankAccounts: (vendorId: string) =>
+    apiClient.get(`/vendors/${vendorId}/bank-accounts`).then((res) => res.data),
+
   create: (data: CreateVendorPayload) =>
     apiClient.post('/vendors', data).then((res) => res.data),
 
