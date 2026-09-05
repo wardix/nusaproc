@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, Button, Space, Card, Typography, App, theme } from 'antd';
-import { FilePdfOutlined, CheckOutlined, FileTextOutlined, PlusOutlined } from '@ant-design/icons';
+import { FilePdfOutlined, CheckOutlined, SendOutlined, FileTextOutlined, PlusOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { poApi } from '../../../api/endpoints/po';
@@ -10,6 +10,22 @@ import { StatusTag } from '../../../components/common/StatusTag';
 
 const { Text } = Typography;
 
+const formatDateIndo = (dateStr?: string) => {
+  if (!dateStr) return '-';
+  try {
+    const d = new Date(dateStr);
+    return new Intl.DateTimeFormat('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(d);
+  } catch {
+    return dateStr;
+  }
+};
+
 export const PoListPage: React.FC = () => {
   const { notification } = App.useApp();
   const { token } = theme.useToken();
@@ -17,10 +33,21 @@ export const PoListPage: React.FC = () => {
   const queryClient = useQueryClient();
 
   // Fetch PO list from backend
-  const seededPoId = '50000000-0000-0000-0000-000000000001';
   const { data, isLoading } = useQuery({
     queryKey: ['purchase-orders'],
     queryFn: () => poApi.list().catch(() => ({ data: [] })),
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: (id: string) => poApi.approve(id),
+    onSuccess: () => {
+      notification.success({ message: 'Purchase Order berhasil disetujui (R25).' });
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.detail || err?.response?.data?.title || err.message || 'Gagal menyetujui PO';
+      notification.error({ message: 'Gagal menyetujui PO', description: msg });
+    },
   });
 
   const issueMutation = useMutation({
@@ -29,8 +56,9 @@ export const PoListPage: React.FC = () => {
       notification.success({ message: 'Purchase Order berhasil diterbitkan resmi (R24).' });
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
     },
-    onError: (err: Error) => {
-      notification.error({ message: 'Gagal menerbitkan PO', description: err.message });
+    onError: (err: any) => {
+      const msg = err?.response?.data?.detail || err?.response?.data?.title || err.message || 'Gagal menerbitkan PO';
+      notification.error({ message: 'Gagal menerbitkan PO', description: msg });
     },
   });
 
@@ -50,17 +78,8 @@ export const PoListPage: React.FC = () => {
     }
   };
 
-  const defaultPo = {
-    id: seededPoId,
-    poNumber: 'PO-202608-0001',
-    vendorName: 'PT Fiber Optik Nusantara',
-    bankAccount: 'BCA 1234567890',
-    totalAmount: 25000000,
-    status: 'ISSUED',
-  };
-
   const rawList = data?.data;
-  const poData = Array.isArray(rawList) && rawList.length > 0 ? rawList : (rawList && !Array.isArray(rawList) ? [rawList] : [defaultPo]);
+  const poData = Array.isArray(rawList) ? rawList : (rawList ? [rawList] : []);
 
   const columns = [
     {
@@ -70,6 +89,18 @@ export const PoListPage: React.FC = () => {
       render: (text: string) => <Text strong style={{ color: token.colorPrimary }}>{text}</Text>,
     },
     {
+      title: 'Pembuat & Tgl',
+      key: 'creator',
+      render: (_: unknown, record: any) => (
+        <div>
+          <div><Text strong>{record.requesterName || record.createdBy || 'Admin'}</Text></div>
+          <div style={{ fontSize: 12, color: token.colorTextSecondary }}>
+            {record.createdAt ? formatDateIndo(record.createdAt) : '-'}
+          </div>
+        </div>
+      ),
+    },
+    {
       title: 'Vendor Terpilih',
       dataIndex: 'vendorName',
       key: 'vendorName',
@@ -77,15 +108,21 @@ export const PoListPage: React.FC = () => {
     },
     {
       title: 'Rekening Bank Terverifikasi',
-      dataIndex: 'bankAccount',
       key: 'bankAccount',
-      render: (text: string) => text || 'BCA ••••••••890 (Active)',
+      render: (_: unknown, record: any) => {
+        if (record.bankName && record.accountNumber) {
+          return `${record.bankName} - ${record.accountNumber} (${record.accountHolderName || 'Verified'})`;
+        }
+        return record.bankAccount || 'BCA ••••••••890 (Active)';
+      },
     },
     {
       title: 'Total Nilai PO',
-      dataIndex: 'totalAmount',
       key: 'totalAmount',
-      render: (val: number) => <Text strong>{formatRupiah(Number(val) || 25000000)}</Text>,
+      render: (_: unknown, record: any) => {
+        const val = record.grandTotalAmount ?? record.totalAmount ?? 0;
+        return <Text strong>{formatRupiah(Number(val))}</Text>;
+      },
     },
     {
       title: 'Status',
@@ -96,17 +133,41 @@ export const PoListPage: React.FC = () => {
     {
       title: 'Aksi',
       key: 'action',
-      render: (_: unknown, record: { id: string; poNumber: string; status: string }) => (
+      render: (_: unknown, record: any) => (
         <Space size="small">
-          {record.status === 'APPROVED' && (
+          {record.status === 'DRAFT' && !record.approvedBy && (
             <Button
               type="primary"
               size="small"
               icon={<CheckOutlined />}
+              loading={approveMutation.isPending}
+              onClick={() => approveMutation.mutate(record.id)}
+            >
+              Setujui (R25)
+            </Button>
+          )}
+          {record.status === 'DRAFT' && record.approvedBy && (
+            <Button
+              type="primary"
+              size="small"
+              icon={<SendOutlined />}
+              style={{ background: '#52c41a', borderColor: '#52c41a' }}
               loading={issueMutation.isPending}
               onClick={() => issueMutation.mutate(record.id)}
             >
-              Terbitkan
+              Terbitkan (R24)
+            </Button>
+          )}
+          {record.status === 'APPROVED' && (
+            <Button
+              type="primary"
+              size="small"
+              icon={<SendOutlined />}
+              style={{ background: '#52c41a', borderColor: '#52c41a' }}
+              loading={issueMutation.isPending}
+              onClick={() => issueMutation.mutate(record.id)}
+            >
+              Terbitkan (R24)
             </Button>
           )}
           <Button
@@ -126,7 +187,7 @@ export const PoListPage: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <PageHeader
         title="Katalog Surat Pesanan (Purchase Order)"
-        subtitle="Daftar pemesanan resmi kepada vendor terverifikasi dengan proteksi penerbitan dan unduhan PDF resmi (R24–R27)."
+        subtitle="Daftar pemesanan resmi kepada vendor terverifikasi dengan proteksi persetujuan, penerbitan, dan unduhan PDF resmi (R24–R27)."
         icon={<FileTextOutlined style={{ color: token.colorPrimary }} />}
         extra={
           <Button
@@ -145,7 +206,7 @@ export const PoListPage: React.FC = () => {
           dataSource={poData}
           rowKey="id"
           loading={isLoading}
-          scroll={{ x: 750 }}
+          scroll={{ x: 800 }}
           pagination={{ pageSize: 10 }}
         />
       </Card>

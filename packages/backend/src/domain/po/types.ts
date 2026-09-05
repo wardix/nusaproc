@@ -21,7 +21,11 @@ export interface PurchaseOrderRecord {
   id: string;
   poNumber: string;
   vendorId: string;
+  vendorName?: string;
   vendorBankAccountId: string;
+  bankName?: string;
+  accountNumber?: string;
+  accountHolderName?: string;
   paymentTermType: PaymentTermType;
   versionNumber: number;
   status: PoStatus;
@@ -30,6 +34,8 @@ export interface PurchaseOrderRecord {
   grandTotalAmount: number;
   termsAndConditions: string;
   createdBy: string;
+  requesterName?: string;
+  requesterEmail?: string;
   approvedBy?: string | null;
   approvedAt?: string | null;
   issuedAt?: string | null;

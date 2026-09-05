@@ -25,5 +25,8 @@ export const config: AppConfig = {
   clamavPort: process.env.CLAMAV_PORT ? Number(process.env.CLAMAV_PORT) : undefined,
   corsOrigin: process.env.CORS_ORIGIN || '*',
   googleClientId: process.env.GOOGLE_CLIENT_ID,
-  googleAllowedDomain: process.env.GOOGLE_ALLOWED_DOMAIN || 'nusa.id,nusanet.net.id,nusa.net.id',
+  googleAllowedDomain:
+    process.env.NODE_ENV === 'test'
+      ? 'nusa.id,nusanet.net.id,nusa.net.id'
+      : process.env.GOOGLE_ALLOWED_DOMAIN || 'nusa.id,nusanet.net.id,nusa.net.id',
 };
