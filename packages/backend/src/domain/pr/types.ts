@@ -21,6 +21,8 @@ export interface PurchaseRequestRecord {
   id: string;
   prNumber: string;
   requesterId: string;
+  requesterName?: string | null;
+  requesterEmail?: string | null;
   costCenter: string;
   divisionId: string;
   branchId: string;

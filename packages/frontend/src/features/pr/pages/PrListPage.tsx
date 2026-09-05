@@ -1,15 +1,34 @@
 import React, { useState } from 'react';
-import { Table, Button, Tag, Space, Card, Typography, Modal, Input, App, theme, Tooltip } from 'antd';
-import { PlusOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ShoppingCartOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, Space, Card, Typography, Modal, Input, App, theme, Tooltip, type TableProps } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { PlusOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ShoppingCartOutlined, UserOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { prApi } from '../../../api/endpoints/pr';
 import { formatRupiah } from '../../../utils/currency';
+import { formatDate } from '../../../utils/date';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { PageHeader } from '../../../components/common/PageHeader';
 import { StatusTag } from '../../../components/common/StatusTag';
 
 const { Text } = Typography;
+
+export interface PurchaseRequestRow {
+  id: string;
+  prNumber: string;
+  requesterId: string;
+  requesterName?: string;
+  requesterEmail?: string;
+  costCenter: string;
+  divisionId: string;
+  branchId: string;
+  requiredDate: string;
+  paymentTermType: string;
+  status: string;
+  totalEstimatedAmount: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export const PrListPage: React.FC = () => {
   const { notification } = App.useApp();
@@ -59,9 +78,9 @@ export const PrListPage: React.FC = () => {
     },
   });
 
-  const prList = data?.data || [];
+  const prList: PurchaseRequestRow[] = data?.data || [];
 
-  const columns = [
+  const columns: ColumnsType<PurchaseRequestRow> = [
     {
       title: 'Nomor PR',
       dataIndex: 'prNumber',
@@ -69,14 +88,35 @@ export const PrListPage: React.FC = () => {
       render: (text: string) => <Text strong style={{ color: token.colorPrimary }}>{text}</Text>,
     },
     {
-      title: 'Cost Center',
-      dataIndex: 'costCenter',
-      key: 'costCenter',
+      title: 'Tgl Pengajuan',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      width: 130,
+      render: (date: string) => <Text>{formatDate(date)}</Text>,
     },
     {
-      title: 'Divisi',
-      dataIndex: 'divisionId',
-      key: 'divisionId',
+      title: 'Pemohon (Requester)',
+      key: 'requester',
+      render: (_: unknown, record: { requesterName?: string; requesterEmail?: string; requesterId?: string }) => (
+        <Space direction="vertical" size={0}>
+          <Text strong>{record.requesterName || record.requesterEmail || 'Requester'}</Text>
+          {record.requesterEmail && record.requesterName && (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.requesterEmail}
+            </Text>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: 'Cost Center & Divisi',
+      key: 'division',
+      render: (_: unknown, record: { divisionId?: string; costCenter?: string }) => (
+        <Space direction="vertical" size={0}>
+          <Text>{record.divisionId || '-'}</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>{record.costCenter}</Text>
+        </Space>
+      ),
     },
     {
       title: 'Termin Pembayaran',
@@ -195,7 +235,7 @@ export const PrListPage: React.FC = () => {
           dataSource={prList}
           rowKey="id"
           loading={isLoading}
-          scroll={{ x: 800 }}
+          scroll={{ x: 1000 }}
           pagination={{ pageSize: 10 }}
         />
       </Card>

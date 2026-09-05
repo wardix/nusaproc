@@ -86,16 +86,18 @@ export class PrRepository {
   async findById(id: string): Promise<PurchaseRequestRecord | null> {
     const rows = await this.db`
       SELECT 
-        id, pr_number AS "prNumber", requester_id AS "requesterId",
-        cost_center AS "costCenter", division_id AS "divisionId", branch_id AS "branchId",
-        required_date::text AS "requiredDate", payment_term_type AS "paymentTermType",
-        is_emergency AS "isEmergency", emergency_justification AS "emergencyJustification",
-        business_justification AS "businessJustification", status,
-        total_estimated_amount::float AS "totalEstimatedAmount",
-        locked_approval_policy_version AS "lockedApprovalPolicyVersion",
-        created_at::text AS "createdAt", updated_at::text AS "updatedAt"
-      FROM purchase_request
-      WHERE id = ${id}
+        pr.id, pr.pr_number AS "prNumber", pr.requester_id AS "requesterId",
+        u.full_name AS "requesterName", u.email AS "requesterEmail",
+        pr.cost_center AS "costCenter", pr.division_id AS "divisionId", pr.branch_id AS "branchId",
+        pr.required_date::text AS "requiredDate", pr.payment_term_type AS "paymentTermType",
+        pr.is_emergency AS "isEmergency", pr.emergency_justification AS "emergencyJustification",
+        pr.business_justification AS "businessJustification", pr.status,
+        pr.total_estimated_amount::float AS "totalEstimatedAmount",
+        pr.locked_approval_policy_version AS "lockedApprovalPolicyVersion",
+        pr.created_at::text AS "createdAt", pr.updated_at::text AS "updatedAt"
+      FROM purchase_request pr
+      LEFT JOIN app_user u ON u.id = pr.requester_id
+      WHERE pr.id = ${id}
     `;
 
     return rows.length > 0 ? (rows[0] as unknown as PurchaseRequestRecord) : null;
@@ -265,26 +267,28 @@ export class PrRepository {
 
     let query = sql`
       SELECT 
-        id, pr_number AS "prNumber", requester_id AS "requesterId",
-        cost_center AS "costCenter", division_id AS "divisionId", branch_id AS "branchId",
-        required_date::text AS "requiredDate", payment_term_type AS "paymentTermType",
-        is_emergency AS "isEmergency", emergency_justification AS "emergencyJustification",
-        business_justification AS "businessJustification", status,
-        total_estimated_amount::float AS "totalEstimatedAmount",
-        locked_approval_policy_version AS "lockedApprovalPolicyVersion",
-        created_at::text AS "createdAt", updated_at::text AS "updatedAt"
-      FROM purchase_request
+        pr.id, pr.pr_number AS "prNumber", pr.requester_id AS "requesterId",
+        u.full_name AS "requesterName", u.email AS "requesterEmail",
+        pr.cost_center AS "costCenter", pr.division_id AS "divisionId", pr.branch_id AS "branchId",
+        pr.required_date::text AS "requiredDate", pr.payment_term_type AS "paymentTermType",
+        pr.is_emergency AS "isEmergency", pr.emergency_justification AS "emergencyJustification",
+        pr.business_justification AS "businessJustification", pr.status,
+        pr.total_estimated_amount::float AS "totalEstimatedAmount",
+        pr.locked_approval_policy_version AS "lockedApprovalPolicyVersion",
+        pr.created_at::text AS "createdAt", pr.updated_at::text AS "updatedAt"
+      FROM purchase_request pr
+      LEFT JOIN app_user u ON u.id = pr.requester_id
       WHERE 1=1
     `;
 
     if (filters?.requesterId) {
-      query = sql`${query} AND requester_id = ${filters.requesterId}`;
+      query = sql`${query} AND pr.requester_id = ${filters.requesterId}`;
     }
     if (filters?.status) {
-      query = sql`${query} AND status = ${filters.status}`;
+      query = sql`${query} AND pr.status = ${filters.status}`;
     }
 
-    query = sql`${query} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`;
+    query = sql`${query} ORDER BY pr.created_at DESC LIMIT ${limit} OFFSET ${offset}`;
 
     const rows = await query;
     return rows as unknown as PurchaseRequestRecord[];
