@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Table, Button, Tag, Space, Card, Typography, Modal, Input, App, theme, Tooltip, type TableProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ShoppingCartOutlined, UserOutlined } from '@ant-design/icons';
+import { PlusOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ShoppingCartOutlined, UserOutlined, ApartmentOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { prApi } from '../../../api/endpoints/pr';
+import { divisionsApi } from '../../../api/endpoints/organization';
 import { formatRupiah } from '../../../utils/currency';
 import { formatDate } from '../../../utils/date';
 import { useAuthStore } from '../../../stores/useAuthStore';
@@ -21,7 +22,9 @@ export interface PurchaseRequestRow {
   requesterEmail?: string;
   costCenter: string;
   divisionId: string;
+  divisionName?: string;
   branchId: string;
+  branchName?: string;
   requiredDate: string;
   paymentTermType: string;
   status: string;
@@ -29,6 +32,19 @@ export interface PurchaseRequestRow {
   createdAt: string;
   updatedAt: string;
 }
+
+const FALLBACK_DIVISION_NAMES: Record<string, string> = {
+  'DIV-IT': 'Divisi Teknologi Informasi & Infrastruktur',
+  'DIV-OPS': 'Divisi Operasional & Jaringan',
+  'DIV-FIN': 'Divisi Keuangan & Akuntansi',
+  'DIV-LOG': 'Divisi Logistik & Pengadaan',
+  'DIV-GEN': 'Divisi Umum & SDM',
+  '4': 'Divisi Teknologi Informasi & Infrastruktur',
+  '1': 'Divisi Operasional & Jaringan',
+  '2': 'Divisi Keuangan & Akuntansi',
+  '3': 'Divisi Logistik & Pengadaan',
+  '5': 'Divisi Umum & SDM',
+};
 
 export const PrListPage: React.FC = () => {
   const { notification } = App.useApp();
@@ -44,6 +60,25 @@ export const PrListPage: React.FC = () => {
     queryKey: ['purchase-requests'],
     queryFn: () => prApi.list(),
   });
+
+  const { data: divisionsData } = useQuery({
+    queryKey: ['divisions', true],
+    queryFn: () => divisionsApi.list({ isActive: true }).catch(() => ({ data: [] })),
+  });
+
+  const activeDivisions = divisionsData?.data || [];
+
+  const divisionNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    // Seed fallback defaults
+    Object.entries(FALLBACK_DIVISION_NAMES).forEach(([k, v]) => map.set(k, v));
+    // Overlay database master division names
+    activeDivisions.forEach((d) => {
+      map.set(d.code, d.name);
+      map.set(d.id, d.name);
+    });
+    return map;
+  }, [activeDivisions]);
 
   const submitMutation = useMutation({
     mutationFn: (id: string) => prApi.submit(id),
@@ -97,7 +132,7 @@ export const PrListPage: React.FC = () => {
     {
       title: 'Pemohon (Requester)',
       key: 'requester',
-      render: (_: unknown, record: { requesterName?: string; requesterEmail?: string; requesterId?: string }) => (
+      render: (_: unknown, record: PurchaseRequestRow) => (
         <Space direction="vertical" size={0}>
           <Text strong>{record.requesterName || record.requesterEmail || 'Requester'}</Text>
           {record.requesterEmail && record.requesterName && (
@@ -109,14 +144,25 @@ export const PrListPage: React.FC = () => {
       ),
     },
     {
-      title: 'Cost Center & Divisi',
+      title: 'Divisi & Unit Pengaju',
       key: 'division',
-      render: (_: unknown, record: { divisionId?: string; costCenter?: string }) => (
-        <Space direction="vertical" size={0}>
-          <Text>{record.divisionId || '-'}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>{record.costCenter}</Text>
-        </Space>
-      ),
+      render: (_: unknown, record: PurchaseRequestRow) => {
+        const resolvedName =
+          record.divisionName ||
+          divisionNameMap.get(record.divisionId) ||
+          FALLBACK_DIVISION_NAMES[record.divisionId] ||
+          record.divisionId ||
+          '-';
+
+        return (
+          <Space direction="vertical" size={0}>
+            <Text strong>{resolvedName}</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.costCenter ? `Cost Center: ${record.costCenter}` : (record.divisionId ? `Kode: ${record.divisionId}` : '')}
+            </Text>
+          </Space>
+        );
+      },
     },
     {
       title: 'Termin Pembayaran',

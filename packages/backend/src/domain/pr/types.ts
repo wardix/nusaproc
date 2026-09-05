@@ -25,7 +25,9 @@ export interface PurchaseRequestRecord {
   requesterEmail?: string | null;
   costCenter: string;
   divisionId: string;
+  divisionName?: string | null;
   branchId: string;
+  branchName?: string | null;
   requiredDate: string;
   paymentTermType: PaymentTermType;
   isEmergency: boolean;

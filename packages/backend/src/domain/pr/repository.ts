@@ -88,7 +88,10 @@ export class PrRepository {
       SELECT 
         pr.id, pr.pr_number AS "prNumber", pr.requester_id AS "requesterId",
         u.full_name AS "requesterName", u.email AS "requesterEmail",
-        pr.cost_center AS "costCenter", pr.division_id AS "divisionId", pr.branch_id AS "branchId",
+        pr.cost_center AS "costCenter", pr.division_id AS "divisionId",
+        d.name AS "divisionName",
+        pr.branch_id AS "branchId",
+        b.name AS "branchName",
         pr.required_date::text AS "requiredDate", pr.payment_term_type AS "paymentTermType",
         pr.is_emergency AS "isEmergency", pr.emergency_justification AS "emergencyJustification",
         pr.business_justification AS "businessJustification", pr.status,
@@ -97,6 +100,8 @@ export class PrRepository {
         pr.created_at::text AS "createdAt", pr.updated_at::text AS "updatedAt"
       FROM purchase_request pr
       LEFT JOIN app_user u ON u.id = pr.requester_id
+      LEFT JOIN master_division d ON d.code = pr.division_id OR d.id::text = pr.division_id
+      LEFT JOIN master_branch b ON b.code = pr.branch_id OR b.id::text = pr.branch_id
       WHERE pr.id = ${id}
     `;
 
@@ -269,7 +274,10 @@ export class PrRepository {
       SELECT 
         pr.id, pr.pr_number AS "prNumber", pr.requester_id AS "requesterId",
         u.full_name AS "requesterName", u.email AS "requesterEmail",
-        pr.cost_center AS "costCenter", pr.division_id AS "divisionId", pr.branch_id AS "branchId",
+        pr.cost_center AS "costCenter", pr.division_id AS "divisionId",
+        d.name AS "divisionName",
+        pr.branch_id AS "branchId",
+        b.name AS "branchName",
         pr.required_date::text AS "requiredDate", pr.payment_term_type AS "paymentTermType",
         pr.is_emergency AS "isEmergency", pr.emergency_justification AS "emergencyJustification",
         pr.business_justification AS "businessJustification", pr.status,
@@ -278,6 +286,8 @@ export class PrRepository {
         pr.created_at::text AS "createdAt", pr.updated_at::text AS "updatedAt"
       FROM purchase_request pr
       LEFT JOIN app_user u ON u.id = pr.requester_id
+      LEFT JOIN master_division d ON d.code = pr.division_id OR d.id::text = pr.division_id
+      LEFT JOIN master_branch b ON b.code = pr.branch_id OR b.id::text = pr.branch_id
       WHERE 1=1
     `;
 
