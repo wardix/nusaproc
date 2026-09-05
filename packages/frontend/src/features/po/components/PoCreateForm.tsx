@@ -117,9 +117,9 @@ export const PoCreateForm: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // Load approved PRs for selection
+    // Load approved PRs for selection (only those with remaining un-ordered items)
     prApi
-      .list({ status: 'APPROVED' })
+      .list({ status: 'APPROVED', hasRemainingPo: true })
       .then((res) => {
         const prList = res.data || [];
         setApprovedPrs(prList);
@@ -156,17 +156,39 @@ export const PoCreateForm: React.FC = () => {
           paymentTermType: pr.paymentTermType || 'PAY_AFTER_RECEIPT',
         });
         if (pr.items && pr.items.length > 0) {
-          const mappedItems: PoItemRow[] = pr.items.map((it: any, idx: number) => ({
-            key: it.id || `item-${idx}`,
-            prItemId: it.id || '41000000-0000-0000-0000-000000000001',
-            itemName: it.itemName,
-            quantityOrdered: Number(it.quantityRequested) || 1,
-            uom: it.uom || 'Unit',
-            unitPrice: Number(it.estimatedUnitPrice) || 0,
-          }));
-          setItems(mappedItems);
-          const subtotal = mappedItems.reduce((acc, curr) => acc + curr.quantityOrdered * curr.unitPrice, 0);
-          setTaxAmount(Math.round(subtotal * 0.11));
+          const itemsWithRemaining = pr.items
+            .filter((it: any) => {
+              const req = Number(it.quantityRequested) || 0;
+              const ord = Number(it.quantityOrdered) || 0;
+              return (req - ord) > 0;
+            })
+            .map((it: any, idx: number) => {
+              const req = Number(it.quantityRequested) || 0;
+              const ord = Number(it.quantityOrdered) || 0;
+              const remaining = Math.max(1, req - ord);
+              return {
+                key: it.id || `item-${idx}`,
+                prItemId: it.id || '41000000-0000-0000-0000-000000000001',
+                itemName: it.itemName,
+                quantityOrdered: remaining,
+                uom: it.uom || 'Unit',
+                unitPrice: Number(it.estimatedUnitPrice) || 0,
+              };
+            });
+
+          if (itemsWithRemaining.length === 0) {
+            notification.warning({
+              message: 'Seluruh Item PR Sudah Dipesan',
+              description: `Seluruh item dalam Purchase Request '${pr.prNumber}' sudah diterbitkan Purchase Order (PO).`,
+            });
+          } else {
+            setItems(itemsWithRemaining);
+            const subtotal = itemsWithRemaining.reduce(
+              (acc: number, curr: PoItemRow) => acc + curr.quantityOrdered * curr.unitPrice,
+              0
+            );
+            setTaxAmount(Math.round(subtotal * 0.11));
+          }
         }
       }
     } catch {

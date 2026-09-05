@@ -70,7 +70,7 @@ describe('Epic 5: PO & Vendor 4-Eyes Bank Account Verification & PO Generation (
           lineNumber: 1,
           itemName: 'Cisco Catalyst 2960-X',
           specification: '24-port Gigabit Ethernet',
-          quantityRequested: 2,
+          quantityRequested: 100,
           uom: 'Unit',
           estimatedUnitPrice: 15_000_000,
         },
@@ -78,6 +78,11 @@ describe('Epic 5: PO & Vendor 4-Eyes Bank Account Verification & PO Generation (
     });
 
     await submitPurchaseRequest(pr.id, requesterId);
+    await decideApprovalStep({
+      prId: pr.id,
+      approverId: poApproverId,
+      decision: 'APPROVED',
+    });
     await decideApprovalStep({
       prId: pr.id,
       approverId: poApproverId,

@@ -27,7 +27,7 @@ export interface DecidePrPayload {
 }
 
 export const prApi = {
-  list: (params?: { requesterId?: string; status?: string; limit?: number; offset?: number }) =>
+  list: (params?: { requesterId?: string; status?: string; hasRemainingPo?: boolean; limit?: number; offset?: number }) =>
     apiClient.get('/purchase-requests', { params }).then((res) => res.data),
 
   getById: (id: string) =>

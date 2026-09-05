@@ -99,6 +99,7 @@ describe('Epic 6: Goods Receipt (BAST), Simultaneous Invoice Upload & SoD (R28â€
 
     await submitPurchaseRequest(pr.id, requesterId);
     await decideApprovalStep({ prId: pr.id, approverId: poApproverId, decision: 'APPROVED' });
+    await decideApprovalStep({ prId: pr.id, approverId: poApproverId, decision: 'APPROVED' });
 
     // 3. Setup PO & Issue
     const po = await createPurchaseOrder({

@@ -124,6 +124,29 @@ export class PrRepository {
     return rows as unknown as PurchaseRequestItemRecord[];
   }
 
+  async findItemById(id: string): Promise<PurchaseRequestItemRecord | null> {
+    const rows = await this.db`
+      SELECT 
+        id, pr_id AS "prId", line_number AS "lineNumber", item_name AS "itemName",
+        specification, quantity_requested::float AS "quantityRequested",
+        quantity_ordered::float AS "quantityOrdered", uom,
+        estimated_unit_price::float AS "estimatedUnitPrice",
+        subtotal::float AS "subtotal"
+      FROM purchase_request_item
+      WHERE id = ${id}
+    `;
+
+    return rows.length > 0 ? (rows[0] as unknown as PurchaseRequestItemRecord) : null;
+  }
+
+  async incrementItemQuantityOrdered(prItemId: string, qty: number): Promise<void> {
+    await this.db`
+      UPDATE purchase_request_item
+      SET quantity_ordered = quantity_ordered + ${qty}
+      WHERE id = ${prItemId}
+    `;
+  }
+
   async findApprovalInstances(prId: string): Promise<ApprovalInstanceRecord[]> {
     const rows = await this.db`
       SELECT 
@@ -266,7 +289,7 @@ export class PrRepository {
     return rows[0] as unknown as EmergencyPostReviewRecord;
   }
 
-  async list(filters?: { requesterId?: string; status?: string; limit?: number; offset?: number }): Promise<PurchaseRequestRecord[]> {
+  async list(filters?: { requesterId?: string; status?: string; hasRemainingPo?: boolean; limit?: number; offset?: number }): Promise<PurchaseRequestRecord[]> {
     const limit = filters?.limit || 50;
     const offset = filters?.offset || 0;
 
@@ -283,6 +306,17 @@ export class PrRepository {
         pr.business_justification AS "businessJustification", pr.status,
         pr.total_estimated_amount::float AS "totalEstimatedAmount",
         pr.locked_approval_policy_version AS "lockedApprovalPolicyVersion",
+        COALESCE((
+          SELECT SUM(pri.quantity_requested - pri.quantity_ordered)
+          FROM purchase_request_item pri
+          WHERE pri.pr_id = pr.id
+        ), 0)::float AS "remainingQuantity",
+        COALESCE((
+          SELECT COUNT(*)
+          FROM purchase_order_item poi
+          JOIN purchase_request_item pri ON pri.id = poi.pr_item_id
+          WHERE pri.pr_id = pr.id
+        ), 0)::int AS "poCount",
         pr.created_at::text AS "createdAt", pr.updated_at::text AS "updatedAt"
       FROM purchase_request pr
       LEFT JOIN app_user u ON u.id = pr.requester_id
@@ -296,6 +330,12 @@ export class PrRepository {
     }
     if (filters?.status) {
       query = sql`${query} AND pr.status = ${filters.status}`;
+    }
+    if (filters?.hasRemainingPo) {
+      query = sql`${query} AND EXISTS (
+        SELECT 1 FROM purchase_request_item pri
+        WHERE pri.pr_id = pr.id AND (pri.quantity_requested - pri.quantity_ordered) > 0
+      )`;
     }
 
     query = sql`${query} ORDER BY pr.created_at DESC LIMIT ${limit} OFFSET ${offset}`;

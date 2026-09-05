@@ -123,11 +123,13 @@ export function createPrApp(): Hono {
   app.get('/purchase-requests', async (c) => {
     const requesterId = c.req.query('requesterId');
     const status = c.req.query('status');
+    const hasRemainingPoParam = c.req.query('hasRemainingPo');
+    const hasRemainingPo = hasRemainingPoParam !== undefined ? hasRemainingPoParam === 'true' : undefined;
     const limit = Number(c.req.query('limit')) || 50;
     const offset = Number(c.req.query('offset')) || 0;
 
     const repo = new PrRepository();
-    const prs = await repo.list({ requesterId, status, limit, offset });
+    const prs = await repo.list({ requesterId, status, hasRemainingPo, limit, offset });
     return c.json({ success: true, data: prs });
   });
 

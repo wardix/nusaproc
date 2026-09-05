@@ -91,6 +91,7 @@ describe('Epic 7: [Invoice & Tax] Dual-NSFP, Tax Snapshot & 2-Way Matching Engin
 
     await submitPurchaseRequest(pr.id, regularUserId);
     await decideApprovalStep({ prId: pr.id, approverId: headOfApUserId, decision: 'APPROVED' });
+    await decideApprovalStep({ prId: pr.id, approverId: headOfApUserId, decision: 'APPROVED' });
 
     const po = await createPurchaseOrder({
       prId: pr.id,

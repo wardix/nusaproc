@@ -1,5 +1,6 @@
 import { withTransaction } from '../../db/client';
 import { PoRepository } from './repository';
+import { PrRepository } from '../pr/repository';
 import { VendorRepository, ensureDefaultVendors } from '../vendor/repository';
 import {
   createPoSchema,
@@ -81,6 +82,29 @@ export async function createPurchaseOrder(input: CreatePoInput): Promise<Purchas
 
   return await withTransaction(async (tx) => {
     const repo = new PoRepository(tx);
+    const prRepo = new PrRepository(tx);
+
+    // Validate PR item status & remaining quantity, then increment quantity_ordered
+    for (const item of validated.items) {
+      const prItem = await prRepo.findItemById(item.prItemId);
+      if (prItem) {
+        const pr = await prRepo.findById(prItem.prId);
+        if (pr && pr.status !== 'APPROVED') {
+          throw new Error(
+            `Pembuatan PO ditolak (R24): Purchase Request '${pr.prNumber}' belum berstatus APPROVED (status saat ini: ${pr.status}).`
+          );
+        }
+
+        const remaining = Number(prItem.quantityRequested) - Number(prItem.quantityOrdered);
+        if (Number(item.quantityOrdered) > remaining) {
+          throw new Error(
+            `Pembuatan PO ditolak: Kuantitas pesanan item '${prItem.itemName}' (${item.quantityOrdered} ${item.uom}) melebihi sisa kuantitas PR yang belum dipesan (${Math.max(0, remaining)} ${item.uom}).`
+          );
+        }
+
+        await prRepo.incrementItemQuantityOrdered(prItem.id, Number(item.quantityOrdered));
+      }
+    }
 
     const po = await repo.createPo({
       id: poId,

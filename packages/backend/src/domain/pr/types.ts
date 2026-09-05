@@ -35,6 +35,8 @@ export interface PurchaseRequestRecord {
   businessJustification: string;
   status: PrStatus;
   totalEstimatedAmount: number;
+  remainingQuantity?: number;
+  poCount?: number;
   lockedApprovalPolicyVersion?: string | null;
   createdAt: string;
   updatedAt: string;
