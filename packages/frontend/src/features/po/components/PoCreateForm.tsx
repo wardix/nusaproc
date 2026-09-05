@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Form,
   Input,
@@ -16,6 +16,8 @@ import {
   theme,
   Tag,
   Alert,
+  Modal,
+  Badge,
 } from 'antd';
 import {
   FileTextOutlined,
@@ -24,6 +26,9 @@ import {
   BankOutlined,
   PlusOutlined,
   DeleteOutlined,
+  AppstoreAddOutlined,
+  SearchOutlined,
+  CheckSquareOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { poApi, type CreatePoPayload } from '../../../api/endpoints/po';
@@ -85,6 +90,8 @@ const DEFAULT_VENDORS: VendorOption[] = [
 interface PoItemRow {
   key: string;
   prItemId: string;
+  prNumber?: string;
+  divisionName?: string;
   itemName: string;
   quantityOrdered: number;
   uom: string;
@@ -110,6 +117,7 @@ export const PoCreateForm: React.FC = () => {
     {
       key: '1',
       prItemId: '41000000-0000-0000-0000-000000000001',
+      prNumber: 'PR-MANUAL',
       itemName: 'Core Edge Router 10G',
       quantityOrdered: 2,
       uom: 'Unit',
@@ -118,6 +126,14 @@ export const PoCreateForm: React.FC = () => {
   ]);
   const [taxAmount, setTaxAmount] = useState<number>(1100000);
   const [submitting, setSubmitting] = useState(false);
+
+  // Multi-PR Item Picker state
+  const [pickerModalOpen, setPickerModalOpen] = useState(false);
+  const [unfulfilledPrItems, setUnfulfilledPrItems] = useState<any[]>([]);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [selectedPickerRowKeys, setSelectedPickerRowKeys] = useState<React.Key[]>([]);
+  const [selectedPickerItems, setSelectedPickerItems] = useState<any[]>([]);
+  const [pickerSearch, setPickerSearch] = useState('');
 
   useEffect(() => {
     // Load approved PRs for selection (only those with remaining un-ordered items)
@@ -208,6 +224,8 @@ export const PoCreateForm: React.FC = () => {
               return {
                 key: it.id || `item-${idx}`,
                 prItemId: it.id || '41000000-0000-0000-0000-000000000001',
+                prNumber: pr.prNumber,
+                divisionName: pr.divisionName || pr.costCenter,
                 itemName: it.itemName,
                 quantityOrdered: remaining,
                 uom: it.uom || 'Unit',
@@ -234,6 +252,80 @@ export const PoCreateForm: React.FC = () => {
       // Keep default items on error
     }
   };
+
+  const openPrItemPicker = async () => {
+    setPickerModalOpen(true);
+    setPickerLoading(true);
+    try {
+      const res = await prApi.listUnfulfilledItems();
+      const list = res.data || [];
+      setUnfulfilledPrItems(list);
+      setSelectedPickerRowKeys([]);
+      setSelectedPickerItems([]);
+    } catch (err: any) {
+      notification.error({ message: 'Gagal memuat item PR yang disetujui', description: err.message });
+    } finally {
+      setPickerLoading(false);
+    }
+  };
+
+  const handleAddSelectedPrItems = () => {
+    if (selectedPickerItems.length === 0) return;
+
+    // Filter out default placeholder item if it was never customized
+    const currentItems = items.filter(
+      (it) => it.itemName !== 'Core Edge Router 10G' || items.length > 1
+    );
+
+    const existingPrItemIds = new Set(currentItems.map((it) => it.prItemId));
+
+    const newRows: PoItemRow[] = selectedPickerItems
+      .filter((item) => !existingPrItemIds.has(item.id))
+      .map((item, idx) => ({
+        key: item.id || `pr-item-${Date.now()}-${idx}`,
+        prItemId: item.id,
+        prNumber: item.prNumber,
+        divisionName: item.divisionName || item.costCenter,
+        itemName: item.itemName,
+        quantityOrdered: Number(item.remainingQuantity) || 1,
+        uom: item.uom || 'Unit',
+        unitPrice: Number(item.estimatedUnitPrice) || 0,
+      }));
+
+    if (newRows.length === 0) {
+      notification.info({ message: 'Semua item yang dipilih sudah ada dalam rincian PO!' });
+      setPickerModalOpen(false);
+      return;
+    }
+
+    const updated = [...currentItems, ...newRows];
+    setItems(updated);
+
+    const subtotal = updated.reduce(
+      (acc, curr) => acc + (Number(curr.quantityOrdered) || 0) * (Number(curr.unitPrice) || 0),
+      0
+    );
+    setTaxAmount(Math.round(subtotal * 0.11));
+
+    setPickerModalOpen(false);
+    notification.success({
+      message: `${newRows.length} Item Berhasil Ditambahkan ke PO!`,
+      description: 'Item dari berbagai PR yang dipilih telah digabungkan ke dalam rincian PO.',
+    });
+  };
+
+  const filteredPrItems = useMemo(() => {
+    if (!pickerSearch.trim()) return unfulfilledPrItems;
+    const term = pickerSearch.toLowerCase();
+    return unfulfilledPrItems.filter(
+      (it) =>
+        it.itemName?.toLowerCase().includes(term) ||
+        it.prNumber?.toLowerCase().includes(term) ||
+        it.divisionName?.toLowerCase().includes(term) ||
+        it.costCenter?.toLowerCase().includes(term) ||
+        it.specification?.toLowerCase().includes(term)
+    );
+  }, [unfulfilledPrItems, pickerSearch]);
 
   const handlePrChange = (prId: string) => {
     setSelectedPrId(prId);
@@ -334,6 +426,21 @@ export const PoCreateForm: React.FC = () => {
 
   const columns = [
     {
+      title: 'PR Asal',
+      key: 'prReference',
+      width: 150,
+      render: (_: unknown, record: PoItemRow) => (
+        <div>
+          <Tag color="blue">{record.prNumber || 'Manual / PR'}</Tag>
+          {record.divisionName && (
+            <div style={{ fontSize: 11, color: token.colorTextSecondary }}>
+              {record.divisionName}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
       title: 'Nama Barang / Jasa',
       dataIndex: 'itemName',
       key: 'itemName',
@@ -349,7 +456,7 @@ export const PoCreateForm: React.FC = () => {
       title: 'Qty',
       dataIndex: 'quantityOrdered',
       key: 'quantityOrdered',
-      width: 100,
+      width: 90,
       render: (val: number, record: PoItemRow) => (
         <InputNumber
           min={1}
@@ -363,7 +470,7 @@ export const PoCreateForm: React.FC = () => {
       title: 'Satuan',
       dataIndex: 'uom',
       key: 'uom',
-      width: 110,
+      width: 90,
       render: (text: string, record: PoItemRow) => (
         <Input
           value={text}
@@ -376,7 +483,7 @@ export const PoCreateForm: React.FC = () => {
       title: 'Harga Satuan (Rp)',
       dataIndex: 'unitPrice',
       key: 'unitPrice',
-      width: 180,
+      width: 160,
       render: (val: number, record: PoItemRow) => (
         <InputNumber
           min={0}
@@ -391,7 +498,7 @@ export const PoCreateForm: React.FC = () => {
     {
       title: 'Subtotal',
       key: 'subtotal',
-      width: 160,
+      width: 150,
       render: (_: unknown, record: PoItemRow) => (
         <Text strong>{formatRupiah((Number(record.quantityOrdered) || 0) * (Number(record.unitPrice) || 0))}</Text>
       ),
@@ -532,11 +639,26 @@ export const PoCreateForm: React.FC = () => {
 
         {/* Card 2: Items Table */}
         <Card
-          title="Daftar Barang / Jasa yang Dipesan"
+          title={
+            <Space>
+              <span>Daftar Barang / Jasa yang Dipesan</span>
+              <Badge count={items.length} style={{ backgroundColor: token.colorPrimary }} />
+            </Space>
+          }
           extra={
-            <Button type="dashed" icon={<PlusOutlined />} onClick={addItemRow}>
-              Tambah Baris Item
-            </Button>
+            <Space>
+              <Button
+                type="primary"
+                icon={<AppstoreAddOutlined />}
+                onClick={openPrItemPicker}
+                style={{ background: '#1677ff', borderColor: '#1677ff' }}
+              >
+                Ambil Item dari PR (Multi-PR Picker)
+              </Button>
+              <Button type="dashed" icon={<PlusOutlined />} onClick={addItemRow}>
+                Tambah Baris Manual
+              </Button>
+            </Space>
           }
           style={{ marginBottom: 24 }}
         >
@@ -628,8 +750,128 @@ export const PoCreateForm: React.FC = () => {
           </Button>
         </Space>
       </Form>
+
+      {/* Multi-PR Item Picker Modal */}
+      <Modal
+        title={
+          <Space>
+            <AppstoreAddOutlined style={{ color: token.colorPrimary }} />
+            <span>Multi-PR Item Picker — Pilih Item dari Berbagai PR yang Sudah Disetujui</span>
+          </Space>
+        }
+        open={pickerModalOpen}
+        onCancel={() => setPickerModalOpen(false)}
+        width={950}
+        footer={[
+          <div key="footer-wrap" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text type="secondary">
+              Terpilih: <Text strong style={{ color: token.colorPrimary }}>{selectedPickerRowKeys.length}</Text> item dari berbagai PR
+            </Text>
+            <Space>
+              <Button onClick={() => setPickerModalOpen(false)}>Batal</Button>
+              <Button
+                type="primary"
+                icon={<CheckSquareOutlined />}
+                disabled={selectedPickerRowKeys.length === 0}
+                onClick={handleAddSelectedPrItems}
+              >
+                Tambahkan ke PO ({selectedPickerRowKeys.length} Item)
+              </Button>
+            </Space>
+          </div>,
+        ]}
+        destroyOnClose
+      >
+        <Alert
+          message="Konsolidasi Pengadaan Multi-PR ke 1 PO"
+          description="Anda dapat memilih dan menggabungkan item dari beberapa Purchase Request (PR) yang berbeda ke dalam satu Surat Pesanan (PO) untuk dikirim ke Vendor yang sama."
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+
+        <Input
+          placeholder="Cari berdasarkan nama barang, nomor PR, divisi, spesifikasi..."
+          prefix={<SearchOutlined style={{ color: token.colorTextSecondary }} />}
+          value={pickerSearch}
+          onChange={(e) => setPickerSearch(e.target.value)}
+          allowClear
+          style={{ marginBottom: 16 }}
+        />
+
+        <Table
+          dataSource={filteredPrItems}
+          rowKey="id"
+          loading={pickerLoading}
+          pagination={{ pageSize: 6 }}
+          size="small"
+          rowSelection={{
+            type: 'checkbox',
+            selectedRowKeys: selectedPickerRowKeys,
+            onChange: (keys, rows) => {
+              setSelectedPickerRowKeys(keys);
+              setSelectedPickerItems(rows);
+            },
+          }}
+          columns={[
+            {
+              title: 'No. PR & Divisi',
+              key: 'prNumber',
+              width: 180,
+              render: (_: unknown, record: any) => (
+                <div>
+                  <Tag color="blue">{record.prNumber}</Tag>
+                  <div style={{ fontSize: 11, color: token.colorTextSecondary }}>
+                    {record.divisionName || record.costCenter || 'Unit Kerja'}
+                  </div>
+                </div>
+              ),
+            },
+            {
+              title: 'Nama Barang & Spesifikasi',
+              key: 'itemInfo',
+              render: (_: unknown, record: any) => (
+                <div>
+                  <Text strong>{record.itemName}</Text>
+                  {record.specification && (
+                    <div style={{ fontSize: 12, color: token.colorTextSecondary }}>
+                      {record.specification}
+                    </div>
+                  )}
+                </div>
+              ),
+            },
+            {
+              title: 'Sisa Kebutuhan',
+              key: 'remainingQuantity',
+              width: 130,
+              render: (_: unknown, record: any) => (
+                <Tag color="orange">
+                  {record.remainingQuantity} {record.uom}
+                </Tag>
+              ),
+            },
+            {
+              title: 'Estimasi Harga',
+              dataIndex: 'estimatedUnitPrice',
+              key: 'estimatedUnitPrice',
+              width: 150,
+              render: (price: number) => formatRupiah(Number(price)),
+            },
+            {
+              title: 'Subtotal Estimasi',
+              key: 'subtotal',
+              width: 150,
+              render: (_: unknown, record: any) => (
+                <Text strong>{formatRupiah(Number(record.remainingQuantity) * Number(record.estimatedUnitPrice))}</Text>
+              ),
+            },
+          ]}
+        />
+      </Modal>
     </div>
   );
 };
 
 export default PoCreateForm;
+

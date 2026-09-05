@@ -4,6 +4,7 @@ import type {
   PurchaseRequestItemRecord,
   ApprovalInstanceRecord,
   EmergencyPostReviewRecord,
+  UnfulfilledPrItemRecord,
   PrStatus,
 } from './types';
 
@@ -138,6 +139,36 @@ export class PrRepository {
 
     return rows.length > 0 ? (rows[0] as unknown as PurchaseRequestItemRecord) : null;
   }
+
+  async listUnfulfilledApprovedPrItems(): Promise<UnfulfilledPrItemRecord[]> {
+    const rows = await this.db`
+      SELECT 
+        pri.id,
+        pri.pr_id AS "prId",
+        pr.pr_number AS "prNumber",
+        pr.division_id AS "divisionId",
+        d.name AS "divisionName",
+        pr.cost_center AS "costCenter",
+        pr.required_date::text AS "requiredDate",
+        pri.line_number AS "lineNumber",
+        pri.item_name AS "itemName",
+        pri.specification,
+        pri.quantity_requested::float AS "quantityRequested",
+        pri.quantity_ordered::float AS "quantityOrdered",
+        (pri.quantity_requested - pri.quantity_ordered)::float AS "remainingQuantity",
+        pri.uom,
+        pri.estimated_unit_price::float AS "estimatedUnitPrice",
+        pri.subtotal::float AS "subtotal"
+      FROM purchase_request_item pri
+      JOIN purchase_request pr ON pr.id = pri.pr_id
+      LEFT JOIN master_division d ON d.code = pr.division_id OR d.id::text = pr.division_id
+      WHERE pr.status = 'APPROVED' AND (pri.quantity_requested - pri.quantity_ordered) > 0
+      ORDER BY pr.created_at DESC, pri.line_number ASC
+    `;
+
+    return rows as unknown as UnfulfilledPrItemRecord[];
+  }
+
 
   async incrementItemQuantityOrdered(prItemId: string, qty: number): Promise<void> {
     await this.db`

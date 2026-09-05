@@ -116,6 +116,26 @@ export interface PrWithDetails extends PurchaseRequestRecord {
   approvalInstances: ApprovalInstanceRecord[];
 }
 
+export interface UnfulfilledPrItemRecord {
+  id: string;
+  prId: string;
+  prNumber: string;
+  divisionId: string;
+  divisionName?: string;
+  costCenter: string;
+  requiredDate?: string;
+  lineNumber: number;
+  itemName: string;
+  specification?: string;
+  quantityRequested: number;
+  quantityOrdered: number;
+  remainingQuantity: number;
+  uom: string;
+  estimatedUnitPrice: number;
+  subtotal: number;
+}
+
+
 // Zod Validation Schemas
 export const createPrSchema = z.object({
   costCenter: z.string().min(1, 'Cost center wajib diisi'),

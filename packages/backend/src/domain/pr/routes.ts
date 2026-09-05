@@ -34,6 +34,17 @@ export function createPrApp(): Hono {
     }
   });
 
+  // Get Unfulfilled PR Items across Approved PRs (Multi-PR PO consolidation)
+  app.get('/purchase-requests/unfulfilled-items', async (c) => {
+    try {
+      const repo = new PrRepository();
+      const items = await repo.listUnfulfilledApprovedPrItems();
+      return c.json({ success: true, data: items });
+    } catch (err: unknown) {
+      return c.json(formatProblemDetails(err, c.req.path), 500);
+    }
+  });
+
   // Get PR by ID
   app.get('/purchase-requests/:id', async (c) => {
     const prId = c.req.param('id');
