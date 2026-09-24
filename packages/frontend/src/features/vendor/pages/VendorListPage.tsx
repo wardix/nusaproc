@@ -28,6 +28,7 @@ import { vendorApi, type CreateVendorPayload, type CreateBankAccountPayload } fr
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { PageHeader } from '../../../components/common/PageHeader';
 import { StatusTag } from '../../../components/common/StatusTag';
+import { maskNpwp, validateNpwp } from '../../../utils/tax';
 
 const { Text } = Typography;
 
@@ -451,10 +452,29 @@ export const VendorListPage: React.FC = () => {
 
           <Form.Item
             name="taxIdentificationNumber"
-            label="Nomor Pokok Wajib Pajak (NPWP)"
-            rules={[{ required: true, message: 'NPWP wajib diisi' }]}
+            label={
+              <Space size={6}>
+                <span>Nomor Pokok Wajib Pajak (NPWP)</span>
+                <Tag color="cyan">15/16 Digit</Tag>
+              </Space>
+            }
+            normalize={(val) => maskNpwp(val)}
+            rules={[
+              { required: true, message: 'NPWP wajib diisi' },
+              {
+                validator: (_, value) => {
+                  if (!value) return Promise.resolve();
+                  const res = validateNpwp(value);
+                  if (!res.isValid) {
+                    return Promise.reject(new Error(res.message));
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
+            tooltip="Mendukung 15 digit (NPWP lama) atau 16 digit (Coretax / NIK). Format titik dan strip ditambahkan secara otomatis."
           >
-            <Input placeholder="Contoh: 01.234.567.8-012.000" />
+            <Input placeholder="Contoh: 01.234.567.8-012.000" maxLength={22} allowClear />
           </Form.Item>
 
           <Form.Item name="isPkp" label="Status Pengusaha Kena Pajak (PKP)" valuePropName="checked">
