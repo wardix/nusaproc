@@ -171,7 +171,7 @@ export const VendorListPage: React.FC = () => {
                 {
                   id: `bank-${Date.now()}`,
                   bankName: payload.bankName,
-                  bankCode: payload.bankCode,
+                  bankCode: payload.bankCode || '000',
                   accountNumber: `••••••••${payload.accountNumber.slice(-4)}`,
                   accountHolderName: payload.accountHolderName,
                   status: 'PENDING_STAGE_1',
@@ -504,7 +504,21 @@ export const VendorListPage: React.FC = () => {
           layout="vertical"
           onFinish={(val) => {
             if (selectedVendor) {
-              addBankMutation.mutate({ vendorId: selectedVendor.id, payload: val });
+              const bankCodeMap: Record<string, string> = {
+                BCA: '014',
+                Mandiri: '008',
+                BNI: '009',
+                BRI: '002',
+                CIMB: '022',
+                Permata: '013',
+                Danamon: '011',
+                BSI: '451',
+              };
+              const payload = {
+                ...val,
+                bankCode: bankCodeMap[val.bankName] || '000',
+              };
+              addBankMutation.mutate({ vendorId: selectedVendor.id, payload });
             }
           }}
         >
@@ -519,16 +533,10 @@ export const VendorListPage: React.FC = () => {
               <Select.Option value="BNI">Bank Negara Indonesia (BNI)</Select.Option>
               <Select.Option value="BRI">Bank Rakyat Indonesia (BRI)</Select.Option>
               <Select.Option value="CIMB">CIMB Niaga</Select.Option>
+              <Select.Option value="Permata">Bank Permata</Select.Option>
+              <Select.Option value="Danamon">Bank Danamon</Select.Option>
+              <Select.Option value="BSI">Bank Syariah Indonesia (BSI)</Select.Option>
             </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="bankCode"
-            label="Kode Kliring BI / Bank Code"
-            rules={[{ required: true, message: 'Kode bank wajib diisi' }]}
-            initialValue="014"
-          >
-            <Input placeholder="Contoh: 014" />
           </Form.Item>
 
           <Form.Item

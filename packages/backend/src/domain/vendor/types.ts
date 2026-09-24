@@ -47,7 +47,7 @@ export interface CreateVendorInput {
 export interface CreateBankAccountInput {
   vendorId: string;
   bankName: string;
-  bankCode: string;
+  bankCode?: string;
   accountNumber: string;
   accountHolderName: string;
 }
@@ -65,9 +65,25 @@ export const createVendorSchema = z.object({
   isPkp: z.boolean().optional().default(false),
 });
 
-export const createBankAccountSchema = z.object({
-  bankName: z.string().min(2, 'Nama bank wajib diisi'),
-  bankCode: z.string().min(2, 'Kode bank wajib diisi'),
-  accountNumber: z.string().min(4, 'Nomor rekening minimal 4 digit'),
-  accountHolderName: z.string().min(2, 'Nama pemilik rekening wajib diisi'),
-});
+const DEFAULT_BANK_CODES: Record<string, string> = {
+  BCA: '014',
+  Mandiri: '008',
+  BNI: '009',
+  BRI: '002',
+  CIMB: '022',
+  Permata: '013',
+  Danamon: '011',
+  BSI: '451',
+};
+
+export const createBankAccountSchema = z
+  .object({
+    bankName: z.string().min(2, 'Nama bank wajib diisi'),
+    bankCode: z.string().optional(),
+    accountNumber: z.string().min(4, 'Nomor rekening minimal 4 digit'),
+    accountHolderName: z.string().min(2, 'Nama pemilik rekening wajib diisi'),
+  })
+  .transform((data) => ({
+    ...data,
+    bankCode: data.bankCode?.trim() || DEFAULT_BANK_CODES[data.bankName] || '000',
+  }));

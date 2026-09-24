@@ -9,7 +9,7 @@ export interface CreateVendorPayload {
 
 export interface CreateBankAccountPayload {
   bankName: string;
-  bankCode: string;
+  bankCode?: string;
   accountNumber: string;
   accountHolderName: string;
 }
