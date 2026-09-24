@@ -518,7 +518,7 @@ export const ActionDashboard: React.FC = () => {
             <RoleTag role={activeRole} />
             <Tooltip title="Muat Ulang Data">
               <Button size="small" icon={<ReloadOutlined />} onClick={handleRefresh} loading={isGlobalLoading}>
-                Segarkan
+                Muat Ulang
               </Button>
             </Tooltip>
           </Space>
