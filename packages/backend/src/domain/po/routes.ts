@@ -91,6 +91,17 @@ export function createPoAndVendorApp(): Hono {
       return c.json(formatProblemDetails(new Error('User ID diperlukan untuk verifikasi'), c.req.path), 401);
     }
 
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_REGEX.test(bankAccountId)) {
+      return c.json(
+        formatProblemDetails(
+          new Error(`ID rekening bank '${bankAccountId}' bukan format UUID yang valid. Harap gunakan UUID rekening yang sah.`),
+          c.req.path
+        ),
+        400
+      );
+    }
+
     try {
       const body = await c.req.json();
       const account = await verifyBankAccountStage({

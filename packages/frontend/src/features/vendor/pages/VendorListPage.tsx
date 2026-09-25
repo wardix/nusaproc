@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -24,7 +24,7 @@ import {
   BankOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { vendorApi, type CreateVendorPayload, type CreateBankAccountPayload } from '../../../api/endpoints/vendor';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { PageHeader } from '../../../components/common/PageHeader';
@@ -62,7 +62,7 @@ const DEFAULT_VENDORS: VendorDisplayItem[] = [
     status: 'APPROVED',
     bankAccounts: [
       {
-        id: 'ba-001',
+        id: '30000000-0000-0000-0000-000000000001',
         bankName: 'BCA',
         bankCode: '014',
         accountNumber: '••••••••890',
@@ -82,7 +82,7 @@ const DEFAULT_VENDORS: VendorDisplayItem[] = [
     status: 'APPROVED',
     bankAccounts: [
       {
-        id: 'ba-002',
+        id: '30000000-0000-0000-0000-000000000002',
         bankName: 'Mandiri',
         bankCode: '008',
         accountNumber: '••••••••040',
@@ -101,7 +101,7 @@ const DEFAULT_VENDORS: VendorDisplayItem[] = [
     status: 'BLACKLISTED',
     bankAccounts: [
       {
-        id: 'ba-003',
+        id: '30000000-0000-0000-0000-000000000003',
         bankName: 'BCA',
         bankCode: '014',
         accountNumber: '••••••••899',
@@ -116,7 +116,48 @@ export const VendorListPage: React.FC = () => {
   const { message } = App.useApp();
   const { token } = theme.useToken();
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+
+  const { data: serverVendorsRes, isLoading } = useQuery({
+    queryKey: ['vendors'],
+    queryFn: () => vendorApi.list().catch(() => ({ data: [] })),
+  });
+
   const [vendors, setVendors] = useState<VendorDisplayItem[]>(DEFAULT_VENDORS);
+
+  useEffect(() => {
+    const serverVendors = serverVendorsRes?.data;
+    if (Array.isArray(serverVendors) && serverVendors.length > 0) {
+      setVendors(
+        serverVendors.map((v: any) => ({
+          id: v.id,
+          vendorCode: v.vendorCode,
+          name: v.name,
+          taxIdentificationNumber: v.taxIdentificationNumber,
+          isPkp: v.isPkp,
+          status: v.status,
+          bankAccounts: (v.bankAccounts || []).map((b: any) => ({
+            id: b.id,
+            bankName: b.bankName,
+            bankCode: b.bankCode,
+            accountNumber: b.accountNumberMasked || b.accountNumber,
+            accountHolderName: b.accountHolderName,
+            status:
+              b.status === 'VERIFIED'
+                ? 'ACTIVE'
+                : b.status === 'INACTIVE'
+                ? 'REJECTED'
+                : b.verifiedBy1
+                ? 'PENDING_STAGE_2'
+                : 'PENDING_STAGE_1',
+            approvedBy1: b.verifiedBy1Name || b.verifiedBy1 || (b.verifiedBy1 ? 'AP Maker' : null),
+            approvedBy2: b.verifiedBy2Name || b.verifiedBy2 || (b.verifiedBy2 ? 'Head of AP' : null),
+          })),
+        }))
+      );
+    }
+  }, [serverVendorsRes]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
 
@@ -152,9 +193,10 @@ export const VendorListPage: React.FC = () => {
     mutationFn: (payload: CreateVendorPayload) => vendorApi.create(payload),
     onSuccess: (res, variables) => {
       message.success('Master Vendor baru berhasil didaftarkan.');
+      queryClient.invalidateQueries({ queryKey: ['vendors'] });
       setVendors((prev) => [
         {
-          id: res?.data?.id || `vendor-${Date.now()}`,
+          id: res?.data?.id || crypto.randomUUID(),
           vendorCode: variables.vendorCode || `VEND-${Date.now().toString().slice(-4)}`,
           name: variables.name,
           taxIdentificationNumber: variables.taxIdentificationNumber,
@@ -176,8 +218,9 @@ export const VendorListPage: React.FC = () => {
   const addBankMutation = useMutation({
     mutationFn: ({ vendorId, payload }: { vendorId: string; payload: CreateBankAccountPayload }) =>
       vendorApi.createBankAccount(vendorId, payload),
-    onSuccess: (_, { vendorId, payload }) => {
+    onSuccess: (res, { vendorId, payload }) => {
       message.success('Rekening bank vendor berhasil ditambahkan dan masuk antrean verifikasi Stage 1.');
+      queryClient.invalidateQueries({ queryKey: ['vendors'] });
       setVendors((prev) =>
         prev.map((v) => {
           if (v.id === vendorId) {
@@ -187,7 +230,7 @@ export const VendorListPage: React.FC = () => {
               bankAccounts: [
                 ...accounts,
                 {
-                  id: `bank-${Date.now()}`,
+                  id: res?.data?.id || crypto.randomUUID(),
                   bankName: payload.bankName,
                   bankCode: payload.bankCode || '000',
                   accountNumber: `••••••••${payload.accountNumber.slice(-4)}`,
@@ -221,6 +264,7 @@ export const VendorListPage: React.FC = () => {
     }) => vendorApi.verifyBankAccount(vendorId, bankId, payload),
     onSuccess: (_, { vendorId, bankId, payload }) => {
       message.success(`Verifikasi rekening 4-Eyes (${payload.action}) berhasil dicatat.`);
+      queryClient.invalidateQueries({ queryKey: ['vendors'] });
       setVendors((prev) =>
         prev.map((v) => {
           if (v.id === vendorId) {

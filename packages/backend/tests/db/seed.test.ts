@@ -28,8 +28,14 @@ describe('Epic 14: Realistic PT Nusanet Demo Seeder & Fast Role Switcher', () =>
     const vendors = await sql`SELECT id, status FROM vendor`;
     expect(vendors.length).toBeGreaterThanOrEqual(3);
 
-    const bankAccounts = await sql`SELECT id, status FROM vendor_bank_account WHERE status = 'VERIFIED'`;
+    const bankAccounts = await sql`SELECT id, status FROM vendor_bank_account`;
     expect(bankAccounts.length).toBeGreaterThanOrEqual(3);
+
+    const verifiedAccounts = await sql`SELECT id, status FROM vendor_bank_account WHERE status = 'VERIFIED'`;
+    expect(verifiedAccounts.length).toBeGreaterThanOrEqual(2);
+
+    const pendingAccounts = await sql`SELECT id, status FROM vendor_bank_account WHERE status = 'PENDING_VERIFICATION'`;
+    expect(pendingAccounts.length).toBeGreaterThanOrEqual(1);
 
     // 4. Verify transactions across stages
     const prs = await sql`SELECT id, status FROM purchase_request`;

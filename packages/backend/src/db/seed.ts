@@ -97,8 +97,8 @@ export async function runSeed(): Promise<{ success: boolean; message: string }> 
       ),
       (
         ${bank2Id}, ${vendor2Id}, 'Mandiri', '008', 'enc_1020030040',
-        '******0040', 'PT Mitra Solusi Jaringan', 'VERIFIED',
-        ${apMaker.id}, clock_timestamp(), ${apChecker.id}, clock_timestamp(), TRUE
+        '******0040', 'PT Mitra Solusi Jaringan', 'PENDING_VERIFICATION',
+        ${apMaker.id}, clock_timestamp(), NULL, NULL, FALSE
       ),
       (
         ${bank3Id}, ${vendor3Id}, 'BCA', '014', 'enc_5566778899',
@@ -107,6 +107,14 @@ export async function runSeed(): Promise<{ success: boolean; message: string }> 
       )
     ON CONFLICT (id) DO UPDATE SET
       status = EXCLUDED.status,
+      bank_name = EXCLUDED.bank_name,
+      bank_code = EXCLUDED.bank_code,
+      account_number_masked = EXCLUDED.account_number_masked,
+      account_holder_name = EXCLUDED.account_holder_name,
+      verified_by_1 = EXCLUDED.verified_by_1,
+      verified_at_1 = EXCLUDED.verified_at_1,
+      verified_by_2 = EXCLUDED.verified_by_2,
+      verified_at_2 = EXCLUDED.verified_at_2,
       is_primary = EXCLUDED.is_primary
   `;
 
