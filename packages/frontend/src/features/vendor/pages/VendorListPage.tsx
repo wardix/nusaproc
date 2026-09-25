@@ -14,6 +14,7 @@ import {
   Col,
   App,
   theme,
+  Alert,
   type TableProps,
 } from 'antd';
 import {
@@ -129,6 +130,23 @@ export const VendorListPage: React.FC = () => {
   const [createVendorForm] = Form.useForm<CreateVendorPayload>();
   const [addBankForm] = Form.useForm<CreateBankAccountPayload>();
   const [verifyBankForm] = Form.useForm<{ action: 'VERIFY_STAGE_1' | 'VERIFY_STAGE_2' | 'REJECT'; rejectionReason?: string }>();
+  const watchedAction = Form.useWatch('action', verifyBankForm);
+
+  const selectedBankAccount = selectedVendor?.bankAccounts?.find((b) => b.id === selectedBankId);
+  const currentBankStatus = selectedBankAccount?.status;
+  const verifier1 = selectedBankAccount?.approvedBy1;
+
+  // 4-Eyes Principle check (R18): Stage 2 verifier must NOT be the same user who performed Stage 1
+  const isSameVerifierAsStage1 = Boolean(
+    currentBankStatus === 'PENDING_STAGE_2' &&
+      user &&
+      verifier1 &&
+      (
+        (user.fullName && user.fullName.trim().toLowerCase() === verifier1.trim().toLowerCase()) ||
+        (user.id && user.id === verifier1) ||
+        (user.email && user.email.trim().toLowerCase() === verifier1.trim().toLowerCase())
+      )
+  );
 
   const createVendorMutation = useMutation({
     mutationFn: (payload: CreateVendorPayload) => vendorApi.create(payload),
@@ -332,6 +350,7 @@ export const VendorListPage: React.FC = () => {
                         setSelectedBankId(b.id);
                         verifyBankForm.setFieldsValue({
                           action: b.status === 'PENDING_STAGE_1' ? 'VERIFY_STAGE_1' : 'VERIFY_STAGE_2',
+                          rejectionReason: '',
                         });
                         setIsVerifyBankOpen(true);
                       }}
@@ -569,11 +588,18 @@ export const VendorListPage: React.FC = () => {
         confirmLoading={verifyBankMutation.isPending}
         okText="Konfirmasi Verifikasi"
         cancelText="Batal"
+        okButtonProps={{
+          disabled: isSameVerifierAsStage1 && watchedAction === 'VERIFY_STAGE_2',
+        }}
       >
         <Form
           form={verifyBankForm}
           layout="vertical"
           onFinish={(val) => {
+            if (val.action === 'VERIFY_STAGE_2' && isSameVerifierAsStage1) {
+              message.error('Pelanggaran 4-Eyes Principle (R18): Verifikator Tahap 2 wajib orang yang berbeda dari Verifikator Tahap 1.');
+              return;
+            }
             if (selectedVendor && selectedBankId) {
               verifyBankMutation.mutate({
                 vendorId: selectedVendor.id,
@@ -583,19 +609,104 @@ export const VendorListPage: React.FC = () => {
             }
           }}
         >
-          <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-            Setiap rekening bank vendor baru wajib diverifikasi secara independen oleh dua orang petugas terpisah (Stage 1 AP Staff & Stage 2 Head of AP) sebelum dapat digunakan untuk transfer dana.
-          </Text>
+          {selectedBankAccount && (
+            <div style={{ marginBottom: 16, padding: '10px 12px', background: '#fafafa', borderRadius: 6, border: '1px solid #f0f0f0' }}>
+              <Space direction="vertical" size={2} style={{ width: '100%', fontSize: 13 }}>
+                <div>
+                  <Text type="secondary">Vendor:</Text> <Text strong>{selectedVendor?.name}</Text>
+                </div>
+                <div>
+                  <Text type="secondary">Rekening:</Text> <Text strong>{selectedBankAccount.bankName} - {selectedBankAccount.accountNumber}</Text> ({selectedBankAccount.accountHolderName})
+                </div>
+              </Space>
+            </div>
+          )}
 
-          <Form.Item name="action" label="Tindakan Verifikasi" rules={[{ required: true }]}>
+          {currentBankStatus === 'PENDING_STAGE_1' && (
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message="Verifikasi Tahap 1 (AP Staff)"
+              description="Verifikasi Tahap 1 wajib dilakukan oleh Staf AP setelah memeriksa kesesuaian fisik buku tabungan atau rekening koran resmi vendor."
+            />
+          )}
+
+          {currentBankStatus === 'PENDING_STAGE_2' && !isSameVerifierAsStage1 && (
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message="Verifikasi Tahap 1 Selesai"
+              description={
+                <div>
+                  <div>
+                    Tahap 1 telah diverifikasi oleh: <strong>{verifier1 || 'AP Staff'}</strong>.
+                  </div>
+                  <div style={{ marginTop: 4, fontSize: 12 }}>
+                    Lakukan konfirmasi independen ke pihak bank atau vendor sebelum melakukan verifikasi final Tahap 2.
+                  </div>
+                </div>
+              }
+            />
+          )}
+
+          {currentBankStatus === 'PENDING_STAGE_2' && isSameVerifierAsStage1 && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message="Peringatan 4-Eyes Principle (R18)"
+              description={
+                <div>
+                  <div>
+                    Anda tercatat sebagai pemverifikasi Tahap 1 (<strong>{verifier1}</strong>).
+                  </div>
+                  <div style={{ marginTop: 4, fontSize: 12 }}>
+                    Sesuai aturan pemisahan tugas (<em>Segregation of Duties</em>), verifikasi Tahap 2 wajib disahkan oleh pengguna/pejabat lain yang independen. Anda tidak dapat menyetujui Tahap 2 ini.
+                  </div>
+                </div>
+              }
+            />
+          )}
+
+          <Form.Item
+            name="action"
+            label="Tindakan Verifikasi"
+            rules={[{ required: true, message: 'Pilih tindakan verifikasi' }]}
+          >
             <Select>
-              <Select.Option value="VERIFY_STAGE_1">Verifikasi Tahap 1 (AP Staff)</Select.Option>
-              <Select.Option value="VERIFY_STAGE_2">Verifikasi Tahap 2 (Head of AP - Final Rilis)</Select.Option>
+              {currentBankStatus === 'PENDING_STAGE_1' && (
+                <Select.Option value="VERIFY_STAGE_1">Verifikasi Tahap 1 (AP Staff)</Select.Option>
+              )}
+              {currentBankStatus === 'PENDING_STAGE_2' && (
+                <Select.Option value="VERIFY_STAGE_2" disabled={isSameVerifierAsStage1}>
+                  Verifikasi Tahap 2 (Head of AP - Final Rilis){isSameVerifierAsStage1 ? ' (Ditolak: Verifikator Sama)' : ''}
+                </Select.Option>
+              )}
+              {currentBankStatus !== 'PENDING_STAGE_1' && currentBankStatus !== 'PENDING_STAGE_2' && (
+                <>
+                  <Select.Option value="VERIFY_STAGE_1">Verifikasi Tahap 1 (AP Staff)</Select.Option>
+                  <Select.Option value="VERIFY_STAGE_2">Verifikasi Tahap 2 (Head of AP - Final Rilis)</Select.Option>
+                </>
+              )}
               <Select.Option value="REJECT">Tolak Rekening</Select.Option>
             </Select>
           </Form.Item>
 
-          <Form.Item name="rejectionReason" label="Catatan / Alasan Penolakan (Jika ditolak)">
+          <Form.Item
+            name="rejectionReason"
+            label="Catatan / Alasan Penolakan (Wajib jika ditolak)"
+            rules={[
+              {
+                validator: async (_, value) => {
+                  if (watchedAction === 'REJECT' && (!value || !value.trim())) {
+                    throw new Error('Alasan penolakan wajib diisi jika menolak rekening');
+                  }
+                },
+              },
+            ]}
+          >
             <Input.TextArea rows={3} placeholder="Contoh: Nama di rekening tidak cocok dengan NPWP" />
           </Form.Item>
         </Form>
