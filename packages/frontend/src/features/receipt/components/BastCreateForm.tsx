@@ -333,7 +333,7 @@ export const BastCreateForm: React.FC = () => {
               <InboxOutlined style={{ color: token.colorPrimary, fontSize: 48 }} />
             </p>
             <p className="ant-upload-text" style={{ fontSize: 16, fontWeight: 600 }}>
-              Tarik & Lepas File Invoice Vendor & Faktur Pajak (e-Faktur) ke sini
+              Tarik file ke sini
             </p>
             <p className="ant-upload-hint">
               Mendukung file PDF asli, PNG, atau JPEG. File akan otomatis divalidasi magic bytes dan dipindai antivirus secara instan (R51).
