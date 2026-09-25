@@ -16,6 +16,7 @@ import {
   Space,
   Row,
   Col,
+  Alert,
 } from 'antd';
 import {
   InboxOutlined,
@@ -58,8 +59,8 @@ export const BastCreateForm: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [poList, setPoList] = useState<PoOptionItem[]>([]);
-  const [selectedPoId, setSelectedPoId] = useState<string>('50000000-0000-0000-0000-000000000001');
-  const [poItems, setPoItems] = useState<PoItemRow[]>(DEFAULT_PO_ITEMS);
+  const [selectedPoId, setSelectedPoId] = useState<string>('');
+  const [poItems, setPoItems] = useState<PoItemRow[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [loadingPo, setLoadingPo] = useState(false);
 
@@ -68,36 +69,37 @@ export const BastCreateForm: React.FC = () => {
       .list()
       .then((res) => {
         const list = res.data || [];
-        if (Array.isArray(list) && list.length > 0) {
-          setPoList(list);
-          const firstPo = list[0];
+        // Hanya PO berstatus ISSUED atau AMENDED yang dapat dibuatkan BAST (Draft, Completed, Cancelled disaring)
+        const receivablePos = Array.isArray(list)
+          ? list.filter((p: any) => p.status === 'ISSUED' || p.status === 'AMENDED')
+          : [];
+
+        if (receivablePos.length > 0) {
+          setPoList(receivablePos);
+          const firstPo = receivablePos[0];
           setSelectedPoId(firstPo.id);
           form.setFieldValue('poId', firstPo.id);
           loadPoDetails(firstPo.id);
         } else {
-          setPoList([
-            {
-              id: '50000000-0000-0000-0000-000000000001',
-              poNumber: 'PO-202608-0001',
-              vendorName: 'PT Fiber Optik Nusantara',
-              status: 'ISSUED',
-            },
-          ]);
+          setPoList([]);
+          setSelectedPoId('');
+          form.setFieldValue('poId', undefined);
+          setPoItems([]);
         }
       })
       .catch(() => {
-        setPoList([
-          {
-            id: '50000000-0000-0000-0000-000000000001',
-            poNumber: 'PO-202608-0001',
-            vendorName: 'PT Fiber Optik Nusantara',
-            status: 'ISSUED',
-          },
-        ]);
+        setPoList([]);
+        setSelectedPoId('');
+        form.setFieldValue('poId', undefined);
+        setPoItems([]);
       });
   }, []);
 
   const loadPoDetails = async (poId: string) => {
+    if (!poId) {
+      setPoItems([]);
+      return;
+    }
     setLoadingPo(true);
     try {
       const res = await poApi.getById(poId);
@@ -111,10 +113,10 @@ export const BastCreateForm: React.FC = () => {
           }))
         );
       } else {
-        setPoItems(DEFAULT_PO_ITEMS);
+        setPoItems([]);
       }
     } catch {
-      setPoItems(DEFAULT_PO_ITEMS);
+      setPoItems([]);
     } finally {
       setLoadingPo(false);
     }
@@ -242,14 +244,28 @@ export const BastCreateForm: React.FC = () => {
         onFinish={handleSubmit}
       >
         <Card title="Informasi Penerimaan Fisik (BAST)" style={{ marginBottom: 24 }}>
+          {poList.length === 0 && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message="Belum Ada PO Siap Diterima"
+              description="Penerimaan barang (BAST) hanya dapat dilakukan untuk PO yang telah disetujui dan diterbitkan secara resmi (status ISSUED atau AMENDED). PO dengan status Draft tidak dapat dibuatkan BAST."
+            />
+          )}
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item
                 name="poId"
                 label="Pilih Surat Pesanan (PO)"
-                rules={[{ required: true, message: 'Wajib memilih nomor PO!' }]}
+                rules={[{ required: true, message: 'Wajib memilih nomor PO yang telah terbit!' }]}
               >
-                <Select placeholder="Pilih PO" onChange={handlePoChange}>
+                <Select
+                  placeholder={poList.length === 0 ? 'Tidak ada PO berstatus ISSUED / AMENDED' : 'Pilih PO'}
+                  onChange={handlePoChange}
+                  disabled={poList.length === 0}
+                  notFoundContent="Tidak ada PO siap terima"
+                >
                   {poList.map((po) => (
                     <Select.Option key={po.id} value={po.id}>
                       {po.poNumber} {po.vendorName ? `— ${po.vendorName}` : ''} ({po.status})
@@ -348,6 +364,7 @@ export const BastCreateForm: React.FC = () => {
             size="large"
             icon={<CheckCircleOutlined />}
             loading={submitting}
+            disabled={submitting || poList.length === 0}
           >
             Simpan & Terbitkan BAST
           </Button>
