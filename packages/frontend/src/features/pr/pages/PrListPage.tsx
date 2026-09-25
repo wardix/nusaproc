@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Table, Button, Tag, Space, Card, Typography, Modal, Input, App, theme, Tooltip, type TableProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ShoppingCartOutlined, UserOutlined, ApartmentOutlined } from '@ant-design/icons';
+import { PlusOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ShoppingCartOutlined, UserOutlined, ApartmentOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { prApi } from '../../../api/endpoints/pr';
@@ -31,6 +31,14 @@ export interface PurchaseRequestRow {
   totalEstimatedAmount: number;
   remainingQuantity?: number;
   poCount?: number;
+  relatedPos?: Array<{
+    id: string;
+    poNumber: string;
+    status: string;
+    vendorName?: string | null;
+    grandTotalAmount?: number;
+    createdAt?: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -189,6 +197,62 @@ export const PrListPage: React.FC = () => {
       render: (status: string) => <StatusTag status={status} category="pr" />,
     },
     {
+      title: 'PO Terkait',
+      key: 'relatedPos',
+      width: 170,
+      render: (_: unknown, record: PurchaseRequestRow) => {
+        const pos = record.relatedPos || [];
+        if (pos.length === 0) {
+          return (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.status === 'APPROVED' ? 'Belum terbit PO' : '-'}
+            </Text>
+          );
+        }
+        return (
+          <Space direction="vertical" size={4} style={{ width: '100%' }}>
+            {pos.map((po) => {
+              const tagColor =
+                po.status === 'ISSUED'
+                  ? 'success'
+                  : po.status === 'APPROVED'
+                  ? 'processing'
+                  : po.status === 'DRAFT'
+                  ? 'warning'
+                  : 'default';
+              return (
+                <Tooltip
+                  key={po.id}
+                  title={
+                    <div>
+                      <div><Text strong style={{ color: '#fff' }}>{po.poNumber}</Text></div>
+                      <div>Vendor: {po.vendorName || '-'}</div>
+                      {po.grandTotalAmount !== undefined && (
+                        <div>Nilai: {formatRupiah(po.grandTotalAmount)}</div>
+                      )}
+                      <div style={{ fontSize: 11, color: '#d9d9d9', marginTop: 4 }}>
+                        Klik untuk melihat di halaman PO
+                      </div>
+                    </div>
+                  }
+                >
+                  <Tag
+                    color={tagColor}
+                    style={{ cursor: 'pointer', padding: '2px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                    onClick={() => navigate('/po')}
+                  >
+                    <FileTextOutlined />
+                    <span>{po.poNumber}</span>
+                    <span style={{ fontSize: 10, opacity: 0.85 }}>({po.status})</span>
+                  </Tag>
+                </Tooltip>
+              );
+            })}
+          </Space>
+        );
+      },
+    },
+    {
       title: 'Aksi',
       key: 'action',
       render: (_: unknown, record: PurchaseRequestRow) => {
@@ -246,7 +310,7 @@ export const PrListPage: React.FC = () => {
             )}
             {record.status === 'APPROVED' && (
               record.remainingQuantity !== undefined && record.remainingQuantity <= 0 ? (
-                <Tag color="cyan">PO Sudah Diterbitkan</Tag>
+                <Tag color="cyan">Selesai (PO Terpenuhi)</Tag>
               ) : (
                 <Button
                   type="dashed"
@@ -254,7 +318,7 @@ export const PrListPage: React.FC = () => {
                   icon={<ShoppingCartOutlined />}
                   onClick={() => navigate(`/po/create?prId=${record.id}`)}
                 >
-                  Terbitkan PO
+                  {record.relatedPos && record.relatedPos.length > 0 ? 'Terbitkan Sisa PO' : 'Terbitkan PO'}
                 </Button>
               )
             )}

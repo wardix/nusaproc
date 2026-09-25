@@ -98,6 +98,34 @@ export class PrRepository {
         pr.business_justification AS "businessJustification", pr.status,
         pr.total_estimated_amount::float AS "totalEstimatedAmount",
         pr.locked_approval_policy_version AS "lockedApprovalPolicyVersion",
+        COALESCE((
+          SELECT SUM(pri.quantity_requested - pri.quantity_ordered)
+          FROM purchase_request_item pri
+          WHERE pri.pr_id = pr.id
+        ), 0)::float AS "remainingQuantity",
+        COALESCE((
+          SELECT COUNT(*)
+          FROM purchase_order_item poi
+          JOIN purchase_request_item pri ON pri.id = poi.pr_item_id
+          WHERE pri.pr_id = pr.id
+        ), 0)::int AS "poCount",
+        COALESCE((
+          SELECT json_agg(pos) FROM (
+            SELECT DISTINCT
+              po.id,
+              po.po_number AS "poNumber",
+              po.status,
+              v.name AS "vendorName",
+              po.grand_total_amount::float AS "grandTotalAmount",
+              po.created_at::text AS "createdAt"
+            FROM purchase_order po
+            JOIN purchase_order_item poi ON poi.po_id = po.id
+            JOIN purchase_request_item pri ON pri.id = poi.pr_item_id
+            LEFT JOIN vendor v ON v.id = po.vendor_id
+            WHERE pri.pr_id = pr.id
+            ORDER BY po.created_at::text DESC
+          ) pos
+        ), '[]'::json) AS "relatedPos",
         pr.created_at::text AS "createdAt", pr.updated_at::text AS "updatedAt"
       FROM purchase_request pr
       LEFT JOIN app_user u ON u.id = pr.requester_id
@@ -106,7 +134,12 @@ export class PrRepository {
       WHERE pr.id = ${id}
     `;
 
-    return rows.length > 0 ? (rows[0] as unknown as PurchaseRequestRecord) : null;
+    if (rows.length === 0) return null;
+    const row = rows[0] as any;
+    return {
+      ...row,
+      relatedPos: typeof row.relatedPos === 'string' ? JSON.parse(row.relatedPos) : (row.relatedPos || []),
+    } as unknown as PurchaseRequestRecord;
   }
 
   async findItemsByPrId(prId: string): Promise<PurchaseRequestItemRecord[]> {
@@ -348,6 +381,23 @@ export class PrRepository {
           JOIN purchase_request_item pri ON pri.id = poi.pr_item_id
           WHERE pri.pr_id = pr.id
         ), 0)::int AS "poCount",
+        COALESCE((
+          SELECT json_agg(pos) FROM (
+            SELECT DISTINCT
+              po.id,
+              po.po_number AS "poNumber",
+              po.status,
+              v.name AS "vendorName",
+              po.grand_total_amount::float AS "grandTotalAmount",
+              po.created_at::text AS "createdAt"
+            FROM purchase_order po
+            JOIN purchase_order_item poi ON poi.po_id = po.id
+            JOIN purchase_request_item pri ON pri.id = poi.pr_item_id
+            LEFT JOIN vendor v ON v.id = po.vendor_id
+            WHERE pri.pr_id = pr.id
+            ORDER BY po.created_at::text DESC
+          ) pos
+        ), '[]'::json) AS "relatedPos",
         pr.created_at::text AS "createdAt", pr.updated_at::text AS "updatedAt"
       FROM purchase_request pr
       LEFT JOIN app_user u ON u.id = pr.requester_id
@@ -372,6 +422,9 @@ export class PrRepository {
     query = sql`${query} ORDER BY pr.created_at DESC LIMIT ${limit} OFFSET ${offset}`;
 
     const rows = await query;
-    return rows as unknown as PurchaseRequestRecord[];
+    return rows.map((row: any) => ({
+      ...row,
+      relatedPos: typeof row.relatedPos === 'string' ? JSON.parse(row.relatedPos) : (row.relatedPos || []),
+    })) as unknown as PurchaseRequestRecord[];
   }
 }

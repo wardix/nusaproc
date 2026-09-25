@@ -37,9 +37,19 @@ export interface PurchaseRequestRecord {
   totalEstimatedAmount: number;
   remainingQuantity?: number;
   poCount?: number;
+  relatedPos?: RelatedPoSummary[];
   lockedApprovalPolicyVersion?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RelatedPoSummary {
+  id: string;
+  poNumber: string;
+  status: string;
+  vendorName?: string | null;
+  grandTotalAmount?: number;
+  createdAt?: string;
 }
 
 export interface ApprovalInstanceRecord {

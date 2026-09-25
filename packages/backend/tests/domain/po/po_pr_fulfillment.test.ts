@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { sql } from '../../../src/db/client';
 import { app } from '../../../src/index';
 import { createPurchaseRequest, submitPurchaseRequest, decideApprovalStep } from '../../../src/domain/pr/service';
+import { PrRepository } from '../../../src/domain/pr/repository';
 import { createVendor, createVendorBankAccount, verifyBankAccountStage } from '../../../src/domain/vendor/service';
 import { createPurchaseOrder } from '../../../src/domain/po/service';
 import { cleanupTestUsers } from '../../helpers/test_cleaner';
@@ -112,6 +113,14 @@ describe('Purchase Request Fulfillment & Double PO Prevention (R10, R11, R20, R2
     // Verify in database that purchase_request_item.quantity_ordered is now 2
     const prItems = await sql`SELECT quantity_requested, quantity_ordered FROM purchase_request_item WHERE id = ${prItemId}`;
     expect(Number(prItems[0].quantity_ordered)).toBe(2);
+
+    // Verify relatedPos is automatically aggregated when retrieving PR
+    const prRepo = new PrRepository();
+    const prWithPos = await prRepo.findById(pr.id);
+    expect(prWithPos?.relatedPos).toBeDefined();
+    expect(prWithPos?.relatedPos?.length).toBe(1);
+    expect(prWithPos?.relatedPos?.[0].poNumber).toBe(po.poNumber);
+    expect(prWithPos?.relatedPos?.[0].vendorName).toBe('PT Mitra Jaringan Mandiri');
 
     // 3. Second PO issuance for the same PR item -> Must be blocked!
     let secondPoError: string | null = null;
