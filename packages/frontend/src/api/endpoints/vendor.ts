@@ -33,4 +33,11 @@ export const vendorApi = {
     data: { action: 'VERIFY_STAGE_1' | 'VERIFY_STAGE_2' | 'REJECT'; rejectionReason?: string }
   ) =>
     apiClient.post(`/vendors/${vendorId}/bank-accounts/${bankId}/verify`, data).then((res) => res.data),
+
+  updateStatus: (
+    id: string,
+    data: { status: 'PROSPECTIVE' | 'APPROVED' | 'SUSPENDED' | 'BLACKLISTED'; reason?: string }
+  ) => apiClient.patch(`/vendors/${id}/status`, data).then((res) => res.data),
+
+  delete: (id: string) => apiClient.delete(`/vendors/${id}`).then((res) => res.data),
 };

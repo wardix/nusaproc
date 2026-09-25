@@ -5,6 +5,8 @@ import {
   verifyBankAccountStage,
   listVendors,
   listVendorBankAccounts,
+  updateVendorStatusService,
+  deleteVendorService,
 } from '../vendor/service';
 import {
   createPurchaseOrder,
@@ -54,7 +56,72 @@ export function createPoAndVendorApp(): Hono {
     }
   });
 
-  // 3. List Vendor Bank Accounts
+  // 3. Update Vendor Status (Option 2)
+  app.patch('/vendors/:id/status', async (c) => {
+    const vendorId = c.req.param('id');
+    const userId = c.get('authUser')?.userId || c.req.header('X-User-Id');
+    const userRole = c.get('authUser')?.activeRole || c.req.header('X-User-Role') || 'ADMIN';
+
+    if (!userId) {
+      return c.json(formatProblemDetails(new Error('User ID diperlukan'), c.req.path), 401);
+    }
+
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_REGEX.test(vendorId)) {
+      return c.json(
+        formatProblemDetails(new Error(`ID vendor '${vendorId}' bukan format UUID yang valid.`), c.req.path),
+        400
+      );
+    }
+
+    try {
+      const body = await c.req.json();
+      const updated = await updateVendorStatusService({
+        vendorId,
+        status: body.status,
+        reason: body.reason,
+        userId,
+        userRole,
+      });
+      return c.json({ success: true, data: updated });
+    } catch (err: unknown) {
+      const problem = formatProblemDetails(err, c.req.path);
+      return c.json(problem, (problem.status && problem.status >= 400 && problem.status < 600) ? (problem.status as any) : 400);
+    }
+  });
+
+  // 4. Delete Vendor (Option 1 - Safe Delete)
+  app.delete('/vendors/:id', async (c) => {
+    const vendorId = c.req.param('id');
+    const userId = c.get('authUser')?.userId || c.req.header('X-User-Id');
+    const userRole = c.get('authUser')?.activeRole || c.req.header('X-User-Role') || 'ADMIN';
+
+    if (!userId) {
+      return c.json(formatProblemDetails(new Error('User ID diperlukan'), c.req.path), 401);
+    }
+
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_REGEX.test(vendorId)) {
+      return c.json(
+        formatProblemDetails(new Error(`ID vendor '${vendorId}' bukan format UUID yang valid.`), c.req.path),
+        400
+      );
+    }
+
+    try {
+      const result = await deleteVendorService({
+        vendorId,
+        userId,
+        userRole,
+      });
+      return c.json({ success: true, data: result });
+    } catch (err: unknown) {
+      const problem = formatProblemDetails(err, c.req.path);
+      return c.json(problem, (problem.status && problem.status >= 400 && problem.status < 600) ? (problem.status as any) : 400);
+    }
+  });
+
+  // 5. List Vendor Bank Accounts
   app.get('/vendors/:id/bank-accounts', async (c) => {
     const vendorId = c.req.param('id');
     try {

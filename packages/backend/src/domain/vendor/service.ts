@@ -1,16 +1,29 @@
 import { withTransaction } from '../../db/client';
 import { VendorRepository } from './repository';
+import { recordAuditTrailEntry } from '../audit/service';
+import { ForbiddenError, NotFoundError } from '../sod/errors';
 import {
   createVendorSchema,
   createBankAccountSchema,
+  updateVendorStatusSchema,
   type CreateVendorInput,
   type CreateBankAccountInput,
   type VerifyBankAccountInput,
+  type UpdateVendorStatusInput,
+  type DeleteVendorInput,
   type VendorRecord,
   type VendorBankAccountRecord,
 } from './types';
 
-export type { CreateVendorInput, CreateBankAccountInput, VerifyBankAccountInput, VendorRecord, VendorBankAccountRecord };
+export type {
+  CreateVendorInput,
+  CreateBankAccountInput,
+  VerifyBankAccountInput,
+  UpdateVendorStatusInput,
+  DeleteVendorInput,
+  VendorRecord,
+  VendorBankAccountRecord,
+};
 
 function generateVendorCode(): string {
   const timeHex = Date.now().toString(36).toUpperCase();
@@ -140,3 +153,89 @@ export async function listVendorBankAccounts(vendorId: string): Promise<VendorBa
   const repo = new VendorRepository();
   return await repo.listBankAccountsByVendorId(vendorId);
 }
+
+export async function updateVendorStatusService(
+  input: UpdateVendorStatusInput
+): Promise<VendorRecord> {
+  const { vendorId, status, userId, userRole, reason } = input;
+  const validated = updateVendorStatusSchema.parse({ status, reason });
+  const repo = new VendorRepository();
+
+  const vendor = await repo.findVendorById(vendorId);
+  if (!vendor) {
+    throw new NotFoundError(`Vendor dengan ID '${vendorId}' tidak ditemukan.`);
+  }
+
+  const allowedRoles = ['ADMIN', 'ACCOUNT_PAYABLE'];
+  if (!allowedRoles.includes(userRole)) {
+    throw new ForbiddenError(
+      'Hanya pengguna dengan peran ADMIN atau ACCOUNT_PAYABLE yang berhak memperbarui status vendor.'
+    );
+  }
+
+  const oldStatus = vendor.status;
+  const updated = await repo.updateVendorStatus(vendorId, validated.status);
+
+  // Non-blocking audit log
+  try {
+    await recordAuditTrailEntry({
+      actorId: userId,
+      actorRole: userRole,
+      actionType: 'UPDATE_VENDOR_STATUS',
+      entityName: 'vendor',
+      entityId: vendorId,
+      oldState: { status: oldStatus },
+      newState: { status: validated.status },
+      ipAddress: '127.0.0.1',
+      justification: `Pembaruan status vendor '${vendor.name}' (${vendor.vendorCode}) dari ${oldStatus} menjadi ${validated.status}${validated.reason ? `: ${validated.reason}` : ''}`,
+    });
+  } catch {
+    // Non-blocking
+  }
+
+  return updated;
+}
+
+export async function deleteVendorService(
+  input: DeleteVendorInput
+): Promise<{ id: string; name: string }> {
+  const { vendorId, userId, userRole } = input;
+  const repo = new VendorRepository();
+
+  const vendor = await repo.findVendorById(vendorId);
+  if (!vendor) {
+    throw new NotFoundError(`Vendor dengan ID '${vendorId}' tidak ditemukan.`);
+  }
+
+  const allowedRoles = ['ADMIN', 'ACCOUNT_PAYABLE'];
+  if (!allowedRoles.includes(userRole)) {
+    throw new ForbiddenError(
+      'Hanya pengguna dengan peran ADMIN atau ACCOUNT_PAYABLE yang berhak menghapus vendor.'
+    );
+  }
+
+  const result = await withTransaction(async (tx) => {
+    const txRepo = new VendorRepository(tx);
+    return await txRepo.deleteVendor(vendorId);
+  });
+
+  // Non-blocking audit log
+  try {
+    await recordAuditTrailEntry({
+      actorId: userId,
+      actorRole: userRole,
+      actionType: 'DELETE_VENDOR',
+      entityName: 'vendor',
+      entityId: vendorId,
+      oldState: { id: vendor.id, vendorCode: vendor.vendorCode, name: vendor.name, status: vendor.status },
+      newState: null,
+      ipAddress: '127.0.0.1',
+      justification: `Penghapusan master vendor '${vendor.name}' (${vendor.vendorCode})`,
+    });
+  } catch {
+    // Non-blocking
+  }
+
+  return result;
+}
+

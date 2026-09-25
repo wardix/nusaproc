@@ -87,3 +87,23 @@ export const createBankAccountSchema = z
     ...data,
     bankCode: data.bankCode?.trim() || DEFAULT_BANK_CODES[data.bankName] || '000',
   }));
+
+export const updateVendorStatusSchema = z.object({
+  status: z.enum(['PROSPECTIVE', 'APPROVED', 'SUSPENDED', 'BLACKLISTED']),
+  reason: z.string().optional(),
+});
+
+export interface UpdateVendorStatusInput {
+  vendorId: string;
+  status: VendorStatus;
+  userId: string;
+  userRole: string;
+  reason?: string;
+}
+
+export interface DeleteVendorInput {
+  vendorId: string;
+  userId: string;
+  userRole: string;
+}
+

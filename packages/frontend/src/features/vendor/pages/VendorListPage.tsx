@@ -15,6 +15,8 @@ import {
   App,
   theme,
   Alert,
+  Popconfirm,
+  Tooltip,
   type TableProps,
 } from 'antd';
 import {
@@ -23,6 +25,8 @@ import {
   SafetyCertificateOutlined,
   BankOutlined,
   SearchOutlined,
+  DeleteOutlined,
+  EditOutlined,
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { vendorApi, type CreateVendorPayload, type CreateBankAccountPayload } from '../../../api/endpoints/vendor';
@@ -165,12 +169,14 @@ export const VendorListPage: React.FC = () => {
   const [isCreateVendorOpen, setIsCreateVendorOpen] = useState(false);
   const [isAddBankOpen, setIsAddBankOpen] = useState(false);
   const [isVerifyBankOpen, setIsVerifyBankOpen] = useState(false);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<VendorDisplayItem | null>(null);
   const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
 
   const [createVendorForm] = Form.useForm<CreateVendorPayload>();
   const [addBankForm] = Form.useForm<CreateBankAccountPayload>();
   const [verifyBankForm] = Form.useForm<{ action: 'VERIFY_STAGE_1' | 'VERIFY_STAGE_2' | 'REJECT'; rejectionReason?: string }>();
+  const [statusForm] = Form.useForm<{ status: 'PROSPECTIVE' | 'APPROVED' | 'SUSPENDED' | 'BLACKLISTED'; reason?: string }>();
   const watchedAction = Form.useWatch('action', verifyBankForm);
 
   const selectedBankAccount = selectedVendor?.bankAccounts?.find((b) => b.id === selectedBankId);
@@ -301,6 +307,44 @@ export const VendorListPage: React.FC = () => {
     },
   });
 
+  const updateVendorStatusMutation = useMutation({
+    mutationFn: ({
+      vendorId,
+      status,
+      reason,
+    }: {
+      vendorId: string;
+      status: 'PROSPECTIVE' | 'APPROVED' | 'SUSPENDED' | 'BLACKLISTED';
+      reason?: string;
+    }) => vendorApi.updateStatus(vendorId, { status, reason }),
+    onSuccess: (_, { vendorId, status }) => {
+      message.success(`Status vendor berhasil diubah menjadi ${status}.`);
+      queryClient.invalidateQueries({ queryKey: ['vendors'] });
+      setVendors((prev) =>
+        prev.map((v) => (v.id === vendorId ? { ...v, status } : v))
+      );
+      setIsStatusModalOpen(false);
+      statusForm.resetFields();
+    },
+    onError: (err: unknown) => {
+      const errorObj = err as { response?: { data?: { detail?: string } }; message?: string };
+      message.error(errorObj.response?.data?.detail || errorObj.message || 'Gagal memperbarui status vendor');
+    },
+  });
+
+  const deleteVendorMutation = useMutation({
+    mutationFn: (vendorId: string) => vendorApi.delete(vendorId),
+    onSuccess: (_, vendorId) => {
+      message.success('Vendor berhasil dihapus.');
+      queryClient.invalidateQueries({ queryKey: ['vendors'] });
+      setVendors((prev) => prev.filter((v) => v.id !== vendorId));
+    },
+    onError: (err: unknown) => {
+      const errorObj = err as { response?: { data?: { detail?: string } }; message?: string };
+      message.error(errorObj.response?.data?.detail || errorObj.message || 'Gagal menghapus vendor');
+    },
+  });
+
   const filteredVendors = vendors.filter((v) => {
     if (statusFilter && v.status !== statusFilter) return false;
     if (searchTerm) {
@@ -412,6 +456,7 @@ export const VendorListPage: React.FC = () => {
     {
       title: 'Aksi',
       key: 'actions',
+      width: 220,
       render: (_, r) => (
         <Space size="small">
           <Button
@@ -424,6 +469,42 @@ export const VendorListPage: React.FC = () => {
           >
             + Rekening
           </Button>
+          <Tooltip title="Ubah Status Vendor (R65 Blacklist / Suspend)">
+            <Button
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => {
+                setSelectedVendor(r);
+                statusForm.setFieldsValue({
+                  status: r.status,
+                  reason: '',
+                });
+                setIsStatusModalOpen(true);
+              }}
+            >
+              Status
+            </Button>
+          </Tooltip>
+          <Popconfirm
+            title="Hapus Vendor?"
+            description={
+              <div style={{ maxWidth: 260 }}>
+                Vendor hanya dapat dihapus jika <b>belum memiliki riwayat transaksi</b> (PO / Invoice). Lanjutkan?
+              </div>
+            }
+            onConfirm={() => deleteVendorMutation.mutate(r.id)}
+            okText="Ya, Hapus"
+            cancelText="Batal"
+            okButtonProps={{ danger: true, loading: deleteVendorMutation.isPending }}
+          >
+            <Tooltip title="Hapus Vendor (Hanya jika belum ada transaksi)">
+              <Button
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+              />
+            </Tooltip>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -752,6 +833,66 @@ export const VendorListPage: React.FC = () => {
             ]}
           >
             <Input.TextArea rows={3} placeholder="Contoh: Nama di rekening tidak cocok dengan NPWP" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal: Ubah Status Vendor (Option 2 - R65 Blacklist / Suspend) */}
+      <Modal
+        title={`Ubah Status Vendor: ${selectedVendor?.name || ''}`}
+        open={isStatusModalOpen}
+        onCancel={() => {
+          setIsStatusModalOpen(false);
+          statusForm.resetFields();
+        }}
+        onOk={() => {
+          statusForm.validateFields().then((values) => {
+            if (selectedVendor) {
+              updateVendorStatusMutation.mutate({
+                vendorId: selectedVendor.id,
+                status: values.status,
+                reason: values.reason,
+              });
+            }
+          });
+        }}
+        confirmLoading={updateVendorStatusMutation.isPending}
+        okText="Simpan Status"
+        cancelText="Batal"
+      >
+        <Form form={statusForm} layout="vertical">
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message="Aturan Status Vendor (R65)"
+            description="Vendor dengan status BLACKLISTED atau SUSPENDED akan secara otomatis diblokir dari penerbitan PO baru demi mematuhi kepatuhan pengadaan (R65 Blacklist Lock)."
+          />
+          <Form.Item
+            name="status"
+            label="Pilih Status Baru"
+            rules={[{ required: true, message: 'Status vendor wajib dipilih' }]}
+          >
+            <Select>
+              <Select.Option value="APPROVED">
+                <Tag color="success">APPROVED (Aktif / Disetujui)</Tag>
+              </Select.Option>
+              <Select.Option value="PROSPECTIVE">
+                <Tag color="processing">PROSPECTIVE (Calon Rekanan)</Tag>
+              </Select.Option>
+              <Select.Option value="SUSPENDED">
+                <Tag color="warning">SUSPENDED (Ditangguhkan Sementara)</Tag>
+              </Select.Option>
+              <Select.Option value="BLACKLISTED">
+                <Tag color="error">BLACKLISTED (Daftar Hitam - Blokir PO R65)</Tag>
+              </Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="reason" label="Alasan / Catatan Perubahan Status (Opsional)">
+            <Input.TextArea
+              rows={3}
+              placeholder="Contoh: Terjadi wanprestasi pengiriman barang pada PO-2026-004..."
+            />
           </Form.Item>
         </Form>
       </Modal>

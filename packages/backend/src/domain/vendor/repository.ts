@@ -1,4 +1,5 @@
 import { sql, type TransactionClient } from '../../db/client';
+import { NotFoundError, ConflictError } from '../sod/errors';
 import type {
   VendorRecord,
   VendorBankAccountRecord,
@@ -88,6 +89,56 @@ export class VendorRepository {
     `;
 
     return rows[0] as unknown as VendorRecord;
+  }
+
+  async getVendorTransactionCounts(vendorId: string): Promise<{
+    purchaseOrders: number;
+    invoices: number;
+    paymentProposals: number;
+    quotations: number;
+  }> {
+    const [poRows, invRows, ppRows, qRows] = await Promise.all([
+      this.db`SELECT COUNT(*)::int AS count FROM purchase_order WHERE vendor_id = ${vendorId}`,
+      this.db`SELECT COUNT(*)::int AS count FROM invoice WHERE vendor_id = ${vendorId}`,
+      this.db`SELECT COUNT(*)::int AS count FROM payment_proposal WHERE vendor_id = ${vendorId}`,
+      this.db`SELECT COUNT(*)::int AS count FROM vendor_quotation WHERE vendor_id = ${vendorId}`,
+    ]);
+
+    return {
+      purchaseOrders: Number(poRows[0]?.count || 0),
+      invoices: Number(invRows[0]?.count || 0),
+      paymentProposals: Number(ppRows[0]?.count || 0),
+      quotations: Number(qRows[0]?.count || 0),
+    };
+  }
+
+  async deleteVendor(vendorId: string): Promise<{ id: string; name: string }> {
+    const vendor = await this.findVendorById(vendorId);
+    if (!vendor) {
+      throw new NotFoundError(`Vendor dengan ID '${vendorId}' tidak ditemukan.`);
+    }
+
+    const counts = await this.getVendorTransactionCounts(vendorId);
+    const totalTransactions = counts.purchaseOrders + counts.invoices + counts.paymentProposals + counts.quotations;
+
+    if (totalTransactions > 0) {
+      const details: string[] = [];
+      if (counts.purchaseOrders > 0) details.push(`${counts.purchaseOrders} Purchase Order`);
+      if (counts.invoices > 0) details.push(`${counts.invoices} Tagihan / Invoice`);
+      if (counts.paymentProposals > 0) details.push(`${counts.paymentProposals} Proposal Pembayaran`);
+      if (counts.quotations > 0) details.push(`${counts.quotations} Quotation`);
+
+      throw new ConflictError(
+        `Vendor '${vendor.name}' tidak dapat dihapus karena telah memiliki riwayat transaksi: ${details.join(', ')}. Silakan ubah status vendor menjadi SUSPENDED atau BLACKLISTED.`,
+        'VENDOR_HAS_ACTIVE_TRANSACTIONS'
+      );
+    }
+
+    await this.db`DELETE FROM vendor_performance_rating WHERE vendor_id = ${vendorId}`;
+    await this.db`DELETE FROM vendor_bank_account WHERE vendor_id = ${vendorId}`;
+    await this.db`DELETE FROM vendor WHERE id = ${vendorId}`;
+
+    return { id: vendor.id, name: vendor.name };
   }
 
   async createBankAccount(account: {
